@@ -36,8 +36,15 @@ button{font:inherit;color:inherit}
 @media (max-width:900px){.side{border-left:0;border-top:1px solid var(--line);max-height:none;position:static}}
 
 /* ---------- atlas ---------- */
-.ut{position:relative;margin:0 auto}
-.ut-layer{position:absolute;left:0;right:0;transform:translateY(-16px);border-bottom:1px dashed var(--line);color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.12em;padding:0 0 1px;pointer-events:none;text-align:right}
+.ut-wrap{position:relative;margin:0 auto}
+.ut{position:absolute;left:0;top:0;transform-origin:0 0;touch-action:manipulation;--z:1;--ms:1;--cs:1;--ls:1;--ns:1;--ti:1}
+.mapbar{position:sticky;left:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 30px;font-size:12.5px;color:var(--muted)}
+.mapbar .btn{padding:3px 10px;min-width:34px}
+.mapbar .zl{min-width:44px;text-align:center;font-variant-numeric:tabular-nums}
+.mapbar .tg{display:flex;align-items:center;gap:6px;margin-left:auto;cursor:pointer;padding:4px 10px;border:1px solid var(--line);border-radius:999px;background:var(--panel)}
+.mapbar .tg input{accent-color:var(--accent);margin:0}
+.ut.nolinks .ut-svg{display:none}
+.ut-layer{position:absolute;left:0;right:0;transform:translateY(calc(-16px * var(--ns)));border-bottom:1px dashed var(--line);color:var(--muted);font-size:calc(11px * var(--ns));text-transform:uppercase;letter-spacing:.12em;padding:0 0 1px;pointer-events:none;text-align:right}
 .ut-layer i,.ut-name i{font-style:normal;margin-left:6px;padding:0 5px;border-radius:4px;background:var(--line);color:var(--text);font-size:10px;letter-spacing:0}
 .ut-room{position:absolute}
 .ut-plate{position:relative;background:var(--plate);border-radius:3px;box-shadow:0 0 0 1px #000,0 6px 18px rgba(0,0,0,.45);transition:box-shadow .15s,filter .15s}
@@ -45,36 +52,37 @@ button{font:inherit;color:inherit}
 .ut-plate.no-img{background:repeating-linear-gradient(0deg,transparent 0 18px,#ffffff10 18px 19px),repeating-linear-gradient(90deg,transparent 0 18px,#ffffff10 18px 19px),var(--plate)}
 .ut-plate.no-img img{display:none}
 .ut-room:hover .ut-plate{box-shadow:0 0 0 2px var(--accent),0 6px 18px rgba(0,0,0,.5)}
-.ut-name{position:absolute;left:-8px;top:-11px;z-index:3;white-space:nowrap;font-size:12px;font-weight:600;padding:1px 8px;border-radius:999px;background:#0d0b09e6;border:1px solid var(--line);transform:rotate(-3deg);pointer-events:none}
+.ut-name{position:absolute;left:-8px;bottom:calc(100% - 9px);transform-origin:0 100%;z-index:3;white-space:nowrap;font-size:12px;font-weight:600;padding:1px 8px;border-radius:999px;background:#0d0b09e6;border:1px solid var(--line);transform:rotate(-3deg) scale(var(--ns));pointer-events:none}
 .ut.dim .ut-room:not(.hot) .ut-plate{filter:brightness(.55)}
 
 .ut-svg{position:absolute;inset:0;pointer-events:none;z-index:4;overflow:visible}
-.ut-ln{fill:none;stroke-width:2;opacity:.13;transition:opacity .15s,stroke-width .15s}
+.ut-ln{fill:none;stroke-width:calc(2px * var(--ls));opacity:.13;transition:opacity .15s,stroke-width .15s}
 .ut-ln.is-pit{stroke:var(--pit)}
 .ut-ln.is-crevasse{stroke:var(--crev);stroke-dasharray:6 4}
 .ut-lt{font-size:10px;paint-order:stroke;stroke:#0d0b09;stroke-width:3px;opacity:0;text-anchor:middle;transition:opacity .15s}
 .ut-lt.is-pit{fill:var(--pit)} .ut-lt.is-crevasse{fill:var(--crev)}
 .ut.dim .ut-ln{opacity:.06}
-.ut-ln.hot,.ut-ln.phot,.ut.dim .ut-ln.hot{opacity:1;stroke-width:3}
+.ut-ln.hot,.ut-ln.phot,.ut.dim .ut-ln.hot{opacity:1;stroke-width:calc(3px * var(--ls))}
 .ut-lt.hot,.ut-lt.phot{opacity:1}
 
-.cx{position:absolute;transform:translate(-50%,-50%);pointer-events:none;z-index:5}
+.cx{position:absolute;transform:translate(-50%,-50%) scale(var(--cs,1));pointer-events:none;z-index:5}
 .cx-pit{width:11px;height:11px;border-radius:50%;background:#000;border:2px solid var(--pit)}
 .cx-crater{width:15px;height:15px;border-radius:50%;border:2px dashed var(--pit);background:#e0604f22}
 .cx-fire{width:18px;height:18px;display:grid;place-items:center}
 .cx-fire img{width:18px;height:18px;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 0 3px #ff9d3caa) drop-shadow(0 1px 1px #000)}
 .cx-fire.dot{width:9px;height:9px;border-radius:50%;background:var(--fire);box-shadow:0 0 6px 2px #ff9d3c99}
 .cx-exit{width:9px;height:9px;background:var(--exit);border:1px solid #0b2d07;border-radius:2px}
-.cx-crevasse{width:9px;height:9px;background:var(--crev);border:1px solid #062b35;transform:translate(-50%,-50%) rotate(45deg)}
+.cx-crevasse{width:9px;height:9px;background:var(--crev);border:1px solid #062b35;transform:translate(-50%,-50%) scale(var(--cs,1)) rotate(45deg)}
 .cx-mount{color:var(--crev);font-size:12px;line-height:1;text-shadow:0 0 3px #000}
 
 /* ---------- user paths ---------- */
 .up-svg{position:absolute;inset:0;z-index:8;pointer-events:none;overflow:visible}
-.up-line{fill:none;stroke-width:3;stroke-linejoin:round;stroke-linecap:round;filter:drop-shadow(0 1px 1.5px #000)}
-.up-hit{fill:none;stroke:transparent;stroke-width:14;pointer-events:stroke;cursor:pointer}
+.up-line{fill:none;stroke-width:calc(3px * var(--ls));stroke-linejoin:miter;stroke-miterlimit:8;stroke-linecap:butt;filter:drop-shadow(0 1px 1.5px #000)}
+.up-hit{fill:none;stroke:transparent;stroke-width:calc(14px * var(--ls));pointer-events:stroke;cursor:pointer}
 .ut.busy .up-hit{pointer-events:none}
 .up-start{stroke:#0d0b09;stroke-width:1.5}
-.up-g.sel .up-line,.up-g.hl .up-line{stroke-width:4}
+.up-g.sel .up-line,.up-g.hl .up-line{stroke-width:calc(4px * var(--ls))}
+.up-line.jump{stroke-linecap:round;stroke-dasharray:0 calc(8px * var(--ls))}
 .up-g{opacity:.18;transition:opacity .15s}
 .up-g:hover{opacity:.7}
 .up-g.hl,.up-g.sel,.up-g.flash{opacity:1}
@@ -90,7 +98,7 @@ button{font:inherit;color:inherit}
 
 /* ---------- markers ---------- */
 .mk-layer{position:absolute;inset:0;z-index:10;pointer-events:none}
-.mk{position:absolute;width:22px;height:22px;transform:translate(-50%,-50%);pointer-events:auto;cursor:grab;touch-action:none;display:grid;place-items:center;border-radius:5px;background:#0d0b09cc;box-shadow:0 0 0 1px var(--mkc,#e0b062),0 2px 6px #000}
+.mk{position:absolute;width:22px;height:22px;transform:translate(-50%,-50%) scale(var(--ms));pointer-events:auto;cursor:grab;touch-action:none;display:grid;place-items:center;border-radius:5px;background:#0d0b09cc;box-shadow:0 0 0 1px var(--mkc,#e0b062),0 2px 6px #000}
 .ut.busy .mk{pointer-events:none}
 .mk.small{width:16px;height:16px;border-radius:4px}
 .mk.small img{width:13px;height:13px}
@@ -100,8 +108,8 @@ button{font:inherit;color:inherit}
 .mk:hover{z-index:2;box-shadow:0 0 0 2px var(--mkc,#e0b062),0 2px 8px #000}
 .mk.dragging{cursor:grabbing;opacity:.85}
 .mk.flash{animation:flash 1s ease 2}
-@keyframes flash{50%{transform:translate(-50%,-50%) scale(1.8)}}
-.mk .tip{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);white-space:pre-wrap;width:max-content;max-width:220px;background:#0d0b09;border:1px solid var(--line);padding:5px 8px;border-radius:6px;font-size:12px;display:none;pointer-events:none}
+@keyframes flash{50%{transform:translate(-50%,-50%) scale(calc(var(--ms) * 1.8))}}
+.mk .tip{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%) scale(var(--ti));transform-origin:50% 100%;white-space:pre-wrap;width:max-content;max-width:220px;background:#0d0b09;border:1px solid var(--line);padding:5px 8px;border-radius:6px;font-size:12px;display:none;pointer-events:none}
 .mk:hover .tip{display:block}
 .mk.hidden{display:none}
 .cell-hl{position:absolute;width:19px;height:19px;border:2px solid var(--accent);border-radius:3px;pointer-events:none;z-index:9;display:none;background:#e0b06233;transform:translate(-50%,-50%)}
@@ -109,7 +117,7 @@ button{font:inherit;color:inherit}
 .ut.placing{cursor:crosshair}
 
 /* ---------- editor ---------- */
-.ed{position:absolute;z-index:30;width:250px;background:var(--panel);border:1px solid var(--accent);border-radius:10px;padding:10px;box-shadow:0 10px 30px #000a}
+.ed{position:absolute;z-index:60;width:250px;background:var(--panel);border:1px solid var(--accent);border-radius:10px;padding:10px;box-shadow:0 10px 30px #000a}
 .ed h3{margin:0 0 8px;font-size:13px;color:var(--muted);font-weight:500}
 .ed .types{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
 .ed .sw{width:22px;height:22px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0}
@@ -144,6 +152,28 @@ button{font:inherit;color:inherit}
 .legend .sw.c{border-top:2px dashed var(--crev)}
 .warn{font-size:12px;color:var(--fire);margin:0}
 
+/* ---------- mobile ---------- */
+@media (max-width:700px){
+  .bar{padding:8px 12px;gap:6px;position:relative}
+  .hint .kb{display:none}
+  .bar h1{font-size:15px;margin:0}
+  .bar small{font-size:11.5px}
+  .tools{margin-left:0;width:100%;flex-wrap:nowrap;overflow-x:auto;padding-bottom:2px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .tools::-webkit-scrollbar{display:none}
+  .tool{flex:none;padding:7px 11px}
+  .hint{font-size:12px;line-height:1.5}
+  .hint kbd{display:none}
+  .hint .btn{padding:4px 10px;margin:4px 6px 0 0}
+  .scroll{padding:12px 8px}
+  .mapbar{margin-bottom:26px}
+  .mapbar .btn{padding:6px 12px}
+  .mapbar .tg{margin-left:0}
+  .side{padding:16px}
+  .filters label{padding:7px 0}
+  .list li.item{padding:8px 6px}
+  .ed{position:fixed !important;left:8px !important;right:8px;top:auto !important;bottom:8px;width:auto;max-height:70vh;overflow:auto;padding:14px}
+  .ed .btn{padding:8px 12px}
+}
 /* ---------- edit mode / read-only ---------- */
 .ut.editing #cxl .cx{pointer-events:auto;cursor:grab;z-index:12;touch-action:none}
 .ut.editing #cxl .cx::after{content:"";position:absolute;inset:-6px}
@@ -191,7 +221,14 @@ body:not(.readonly) [data-ro-only]{display:none !important}
 </div>
 
 <div class="main">
-  <div class="scroll"><div class="ut" id="ut"></div></div>
+  <div class="scroll" id="scroll">
+    <div class="mapbar">
+      <button class="btn" id="zOut" aria-label="Dézoomer">−</button><span class="zl" id="zl">100 %</span><button class="btn" id="zIn" aria-label="Zoomer">+</button>
+      <button class="btn" id="zFit">Ajuster</button>
+      <label class="tg"><input type="checkbox" id="linksTg" checked=""> Liens gouffres / crevasses</label>
+    </div>
+    <div class="ut-wrap" id="utw"><div class="ut" id="ut"></div></div>
+  </div>
   <aside class="side">
     <h2>Objets</h2>
     <div class="filters" id="filters"></div>
@@ -232,7 +269,7 @@ body:not(.readonly) [data-ro-only]{display:none !important}
   </aside>
 </div>
 
-<script id="atlas-data" type="application/json">{"readonly":true,"exportedAt":"2026-11-12T17:15:03.105Z","map":{"points":[{"id":"p0","k":"pit","room":"north_entrance","cx":12,"cy":5},{"id":"p1","k":"pit","room":"north_entrance","cx":8,"cy":6},{"id":"p2","k":"fire","room":"north_entrance","cx":2,"cy":1},{"id":"p3","k":"exit","room":"north_entrance","cx":1,"cy":1},{"id":"p4","k":"pit","room":"ukabu_sewers","cx":0,"cy":1},{"id":"p5","k":"exit","room":"ukabu_sewers","cx":1,"cy":3},{"id":"p6","k":"pit","room":"mizuho_entrance","cx":3,"cy":1},{"id":"p7","k":"pit","room":"mizuho_entrance","cx":1,"cy":2},{"id":"p8","k":"fire","room":"mizuho_entrance","cx":1,"cy":2},{"id":"p9","k":"pit","room":"south_entrance","cx":13,"cy":1},{"id":"p10","k":"pit","room":"south_entrance","cx":1,"cy":4},{"id":"p11","k":"fire","room":"south_entrance","cx":4,"cy":3},{"id":"p12","k":"exit","room":"south_entrance","cx":4,"cy":4},{"id":"p13","k":"pit","room":"cavern_a","cx":5,"cy":1},{"id":"p14","k":"crevasse","room":"cavern_a","cx":2,"cy":2},{"id":"p15","k":"fire","room":"cavern_a","cx":4,"cy":1},{"id":"p16","k":"crater","room":"cavern_a","cx":1,"cy":1},{"id":"p17","k":"crevasse","room":"cavern_c","cx":4,"cy":2},{"id":"p18","k":"fire","room":"cavern_c","cx":3,"cy":2},{"id":"p19","k":"crater","room":"cavern_c","cx":5,"cy":1},{"id":"p20","k":"pit","room":"hidden_north_top","cx":1,"cy":1},{"id":"p21","k":"crater","room":"hidden_north_top","cx":5,"cy":3},{"id":"p22","k":"pit","room":"cavern_b","cx":1,"cy":2},{"id":"p23","k":"pit","room":"cavern_b","cx":8,"cy":5},{"id":"p24","k":"fire","room":"cavern_b","cx":6,"cy":3},{"id":"p25","k":"crater","room":"cavern_b","cx":6,"cy":2},{"id":"p26","k":"pit","room":"cavern_1_5","cx":4,"cy":1},{"id":"p27","k":"crater","room":"cavern_1_5","cx":1,"cy":1},{"id":"p28","k":"mount","room":"floor_2","cx":3,"cy":5},{"id":"p29","k":"mount","room":"floor_2","cx":10,"cy":6},{"id":"p30","k":"crevasse","room":"floor_2","cx":6,"cy":12},{"id":"p31","k":"crevasse","room":"floor_2","cx":7,"cy":18},{"id":"p32","k":"fire","room":"floor_2","cx":12,"cy":2},{"id":"p33","k":"fire","room":"floor_2","cx":4,"cy":7},{"id":"p34","k":"fire","room":"floor_2","cx":1,"cy":15},{"id":"p35","k":"exit","room":"floor_2","cx":13,"cy":0},{"id":"p36","k":"exit","room":"floor_2","cx":15,"cy":1},{"id":"p37","k":"crater","room":"floor_2","cx":6,"cy":5},{"id":"p38","k":"crater","room":"floor_2","cx":4,"cy":17},{"id":"p39","k":"crater","room":"floor_2","cx":9,"cy":18},{"id":"p40","k":"crater","room":"floor_2","cx":9,"cy":12},{"id":"p41","k":"crater","room":"floor_2","cx":7,"cy":6},{"id":"p42","k":"crater","room":"floor_2","cx":11,"cy":17},{"id":"p43","k":"crater","room":"floor_2","cx":5,"cy":15},{"id":"p44","k":"mount","room":"floor_3","cx":3,"cy":11},{"id":"p45","k":"mount","room":"floor_3","cx":8,"cy":12},{"id":"p46","k":"fire","room":"floor_3","cx":9,"cy":13},{"id":"p47","k":"crater","room":"floor_3","cx":9,"cy":13},{"id":"p48","k":"pit","room":"ghost_king","cx":2,"cy":4}],"links":[{"id":"l0","k":"pit","a":"p0","b":"p19"},{"id":"l1","k":"pit","a":"p1","b":"p16"},{"id":"l2","k":"pit","a":"p13","b":"p37"},{"id":"l3","k":"pit","a":"p9","b":"p27"},{"id":"l4","k":"pit","a":"p10","b":"p25"},{"id":"l5","k":"pit","a":"p22","b":"p38"},{"id":"l6","k":"pit","a":"p23","b":"p39"},{"id":"l7","k":"pit","a":"p26","b":"p40"},{"id":"l8","k":"pit","a":"p4","b":"p21"},{"id":"l9","k":"pit","a":"p20","b":"p41"},{"id":"l10","k":"pit","a":"p6","b":"p42"},{"id":"l11","k":"pit","a":"p7","b":"p43"},{"id":"l12","k":"pit","a":"p48","b":"p47"},{"id":"l13","k":"crevasse","a":"p14","b":"p28"},{"id":"l14","k":"crevasse","a":"p17","b":"p29"},{"id":"l15","k":"crevasse","a":"p30","b":"p44"},{"id":"l16","k":"crevasse","a":"p31","b":"p45"}]},"markers":[{"id":"ezcdiprp","type":"inscription","room":"floor_3","cx":10,"cy":13,"note":"Bloc de lave"},{"id":"in9sv3gt","type":"journal","room":"floor_3","cx":9,"cy":12,"note":"Feuille 7/7"},{"id":"zm95xg5e","type":"journal","room":"floor_3","cx":4,"cy":11,"note":"Feuille 6/7"},{"id":"odr6lcrx","type":"journal","room":"floor_2","cx":6,"cy":12,"note":"Feuille 5/7"},{"id":"jcaijp5o","type":"journal","room":"floor_2","cx":4,"cy":12,"note":"Feuille 4/7"},{"id":"dcl1yywy","type":"journal","room":"floor_2","cx":4,"cy":14,"note":"Feuille 3/7"},{"id":"pbfynu47","type":"journal","room":"south_entrance","cx":2,"cy":4,"note":"Feuille 1/7"},{"id":"hw3xaqlr","type":"journal","room":"cavern_b","cx":6,"cy":3,"note":"Feuille 2/7"},{"id":"iz7q4knn","type":"inscription","room":"floor_2","cx":12,"cy":12,"note":"Zone Ravagée"},{"id":"9zosikvh","type":"inscription","room":"floor_2","cx":12,"cy":15,"note":"Gros Rocher"},{"id":"5lo77z0o","type":"inscription","room":"floor_2","cx":7,"cy":14,"note":"Charbon"},{"id":"8rybprp9","type":"inscription","room":"floor_2","cx":6,"cy":16,"note":"Stalactite"},{"id":"07cxh9n7","type":"inscription","room":"floor_2","cx":14,"cy":2,"note":"Rivière"}],"paths":[{"id":"x6gfc7y5","color":"#f2c14e","note":"Chemin Sud (25 PA jusqu'au trésor)","pts":[{"room":"south_entrance","cx":4,"cy":4},{"room":"south_entrance","cx":4,"cy":3},{"room":"south_entrance","cx":12,"cy":3},{"room":"south_entrance","cx":12,"cy":1},{"room":"south_entrance","cx":13,"cy":1},{"room":"cavern_1_5","cx":1,"cy":1},{"room":"cavern_1_5","cx":4,"cy":1},{"room":"floor_2","cx":9,"cy":12},{"room":"floor_2","cx":10,"cy":12},{"room":"floor_2","cx":10,"cy":11},{"room":"floor_2","cx":12,"cy":11},{"room":"floor_2","cx":12,"cy":10},{"room":"floor_2","cx":13,"cy":10}]},{"id":"3f3hqpyu","color":"#6fd08c","note":"Chemin cimetière (21 jusqu'au trésor). Nécéssite de se téléporter au cimetière avec le recueil.","pts":[{"room":"ghost_king","cx":2,"cy":3},{"room":"ghost_king","cx":2,"cy":4},{"room":"floor_3","cx":9,"cy":13},{"room":"floor_3","cx":8,"cy":13},{"room":"floor_3","cx":8,"cy":12},{"room":"floor_2","cx":7,"cy":18},{"room":"floor_2","cx":9,"cy":18},{"room":"floor_2","cx":9,"cy":15},{"room":"floor_2","cx":12,"cy":15},{"room":"floor_2","cx":12,"cy":10},{"room":"floor_2","cx":13,"cy":10}],"hl":false},{"id":"uyx0ccq1","color":"#5fb3c9","note":"Chemin Mizuho (18 PA depuis l'embouchure jusqu'au trésor). CHEMIN LE PLUS RAPIDE.","pts":[{"room":"mizuho_entrance","cx":2,"cy":1},{"room":"mizuho_entrance","cx":3,"cy":1},{"room":"floor_2","cx":11,"cy":17},{"room":"floor_2","cx":9,"cy":17},{"room":"floor_2","cx":9,"cy":15},{"room":"floor_2","cx":12,"cy":15},{"room":"floor_2","cx":12,"cy":10},{"room":"floor_2","cx":13,"cy":10}]},{"id":"5s72i5dz","color":"#c792ea","note":"Chemin Nord ( 27 PA jusqu'au trésor).","pts":[{"room":"north_entrance","cx":1,"cy":1},{"room":"north_entrance","cx":1,"cy":4},{"room":"north_entrance","cx":11,"cy":4},{"room":"north_entrance","cx":11,"cy":5},{"room":"north_entrance","cx":12,"cy":5},{"room":"cavern_c","cx":5,"cy":1},{"room":"cavern_c","cx":5,"cy":2},{"room":"cavern_c","cx":4,"cy":2},{"room":"floor_2","cx":10,"cy":5},{"room":"floor_2","cx":12,"cy":5},{"room":"floor_2","cx":12,"cy":7},{"room":"floor_2","cx":13,"cy":7},{"room":"floor_2","cx":13,"cy":8}]}],"images":{}}</script>
+<script id="atlas-data" type="application/json">{"readonly":true,"exportedAt":"2026-11-12T21:50:28.177Z","map":{"points":[{"id":"p0","k":"pit","room":"north_entrance","cx":12,"cy":5},{"id":"p1","k":"pit","room":"north_entrance","cx":8,"cy":6},{"id":"p2","k":"fire","room":"north_entrance","cx":2,"cy":1},{"id":"p3","k":"exit","room":"north_entrance","cx":1,"cy":1},{"id":"p4","k":"pit","room":"ukabu_sewers","cx":0,"cy":1},{"id":"p5","k":"exit","room":"ukabu_sewers","cx":1,"cy":3},{"id":"p6","k":"pit","room":"mizuho_entrance","cx":3,"cy":1},{"id":"p7","k":"pit","room":"mizuho_entrance","cx":1,"cy":2},{"id":"p8","k":"fire","room":"mizuho_entrance","cx":1,"cy":1},{"id":"p9","k":"pit","room":"south_entrance","cx":13,"cy":1},{"id":"p10","k":"pit","room":"south_entrance","cx":1,"cy":4},{"id":"p11","k":"fire","room":"south_entrance","cx":4,"cy":3},{"id":"p12","k":"exit","room":"south_entrance","cx":4,"cy":4},{"id":"p13","k":"pit","room":"cavern_a","cx":5,"cy":1},{"id":"p14","k":"crevasse","room":"cavern_a","cx":2,"cy":2},{"id":"p15","k":"fire","room":"cavern_a","cx":4,"cy":1},{"id":"p16","k":"crater","room":"cavern_a","cx":1,"cy":1},{"id":"p17","k":"crevasse","room":"cavern_c","cx":4,"cy":2},{"id":"p18","k":"fire","room":"cavern_c","cx":3,"cy":2},{"id":"p19","k":"crater","room":"cavern_c","cx":5,"cy":1},{"id":"p20","k":"pit","room":"hidden_north_top","cx":1,"cy":1},{"id":"p21","k":"crater","room":"hidden_north_top","cx":5,"cy":3},{"id":"p22","k":"pit","room":"cavern_b","cx":1,"cy":2},{"id":"p23","k":"pit","room":"cavern_b","cx":8,"cy":5},{"id":"p24","k":"fire","room":"cavern_b","cx":6,"cy":3},{"id":"p25","k":"crater","room":"cavern_b","cx":6,"cy":2},{"id":"p26","k":"pit","room":"cavern_1_5","cx":4,"cy":1},{"id":"p27","k":"crater","room":"cavern_1_5","cx":1,"cy":1},{"id":"p28","k":"mount","room":"floor_2","cx":3,"cy":5},{"id":"p29","k":"mount","room":"floor_2","cx":10,"cy":5},{"id":"p30","k":"crevasse","room":"floor_2","cx":6,"cy":12},{"id":"p31","k":"crevasse","room":"floor_2","cx":7,"cy":18},{"id":"p32","k":"fire","room":"floor_2","cx":12,"cy":2},{"id":"p33","k":"fire","room":"floor_2","cx":4,"cy":7},{"id":"p34","k":"fire","room":"floor_2","cx":1,"cy":15},{"id":"p35","k":"exit","room":"floor_2","cx":13,"cy":0},{"id":"p36","k":"exit","room":"floor_2","cx":15,"cy":1},{"id":"p37","k":"crater","room":"floor_2","cx":6,"cy":5},{"id":"p38","k":"crater","room":"floor_2","cx":4,"cy":17},{"id":"p39","k":"crater","room":"floor_2","cx":9,"cy":18},{"id":"p40","k":"crater","room":"floor_2","cx":9,"cy":12},{"id":"p41","k":"crater","room":"floor_2","cx":7,"cy":6},{"id":"p42","k":"crater","room":"floor_2","cx":11,"cy":17},{"id":"p43","k":"crater","room":"floor_2","cx":5,"cy":15},{"id":"p44","k":"mount","room":"floor_3","cx":3,"cy":11},{"id":"p45","k":"mount","room":"floor_3","cx":8,"cy":12},{"id":"p46","k":"fire","room":"floor_3","cx":9,"cy":13},{"id":"p47","k":"crater","room":"floor_3","cx":9,"cy":13},{"id":"p48","k":"pit","room":"ghost_king","cx":2,"cy":4}],"links":[{"id":"l0","k":"pit","a":"p0","b":"p19"},{"id":"l1","k":"pit","a":"p1","b":"p16"},{"id":"l2","k":"pit","a":"p13","b":"p37"},{"id":"l3","k":"pit","a":"p9","b":"p27"},{"id":"l4","k":"pit","a":"p10","b":"p25"},{"id":"l5","k":"pit","a":"p22","b":"p38"},{"id":"l6","k":"pit","a":"p23","b":"p39"},{"id":"l7","k":"pit","a":"p26","b":"p40"},{"id":"l8","k":"pit","a":"p4","b":"p21"},{"id":"l9","k":"pit","a":"p20","b":"p41"},{"id":"l10","k":"pit","a":"p6","b":"p42"},{"id":"l11","k":"pit","a":"p7","b":"p43"},{"id":"l12","k":"pit","a":"p48","b":"p47"},{"id":"l13","k":"crevasse","a":"p14","b":"p28"},{"id":"l14","k":"crevasse","a":"p17","b":"p29"},{"id":"l15","k":"crevasse","a":"p30","b":"p44"},{"id":"l16","k":"crevasse","a":"p31","b":"p45"}]},"markers":[],"paths":[],"images":{}}</script>
 <script>
 /* ===== Mode : éditable ou atlas exporté en lecture seule ===== */
 const EMBED = (() => { try { return JSON.parse(document.getElementById("atlas-data").textContent); } catch (e) { return null; } })();
@@ -243,6 +280,11 @@ if (READONLY) document.body.classList.add("readonly");
 
 /* ===== Configuration ===== */
 const IMG_BASE = "https://www.shinobi.fr/static/images/carte/underground/rooms-plan4/";
+// Dossier d'images à côté du fichier HTML (ex. sur GitHub Pages). S'il manque, les images viennent de shinobi.fr.
+const LOCAL_IMG = "images/";
+const localName = url => LOCAL_IMG + url.split("/").pop();
+// essaie l'image locale, puis l'adresse d'origine, puis l'action de secours
+const FALLBACK = "if(this.dataset.alt){this.src=this.dataset.alt;this.removeAttribute('data-alt')}else{";
 const CELL = 19;
 const STORE_KEY = "atlas-souterrain-v3";
 const MAP_BASE = 2; // version des positions par défaut
@@ -357,13 +399,14 @@ const save = () => {
 };
 const PT = id => map.points.find(p => p.id === id);
 
-const iconSrc = k => { const t = TYPES[k]; return t && ((t.imgKey && images[t.imgKey]) || t.img); };
+// attributs src / data-alt pour une image : intégrée, sinon locale puis distante
+const imgAttrs = (key, url) => images[key] ? `src="${images[key]}"` : `src="${localName(url)}" data-alt="${url}"`;
 function iconHTML(type) {
-  const t = TYPES[type] || TYPES.note, src = iconSrc(type);
-  if (!src) return `<span class="ico">${t.fallback}</span>`;
-  return `<img src="${src}" alt="" onerror="this.outerHTML='<span class=&quot;ico&quot;>${t.fallback}</span>'">`;
+  const t = TYPES[type] || TYPES.note;
+  if (!t.img) return `<span class="ico">${t.fallback}</span>`;
+  return `<img ${imgAttrs(t.imgKey, t.img)} alt="" onerror="${FALLBACK}this.outerHTML='<span class=&quot;ico&quot;>${t.fallback}</span>'}">`;
 }
-const cxInner = k => k === "mount" ? "▲" : k === "fire" ? `<img src="${images.flambeau || FIRE_IMG}" alt="" onerror="this.parentNode.classList.add('dot');this.remove()">` : "";
+const cxInner = k => k === "mount" ? "▲" : k === "fire" ? `<img ${imgAttrs("flambeau", FIRE_IMG)} alt="" onerror="${FALLBACK}this.parentNode.classList.add('dot');this.remove()}">` : "";
 const kindDot = k => `<b class="cx cx-${k}">${cxInner(k)}</b>`;
 
 /* ===== Construction de l'atlas ===== */
@@ -373,7 +416,7 @@ let html = "";
 for (const L of LAYERS) html += `<div class="ut-layer" style="top:${L.top}px">${L.label}${L.badge ? `<i>${L.badge}</i>` : ""}</div>`;
 for (const r of ROOMS) {
   html += `<div class="ut-room" data-room="${r.id}" style="left:${r.l}px;top:${r.t}px;width:${r.w}px;height:${r.h}px">
-    <div class="ut-plate" style="width:${r.w}px;height:${r.h}px"><img src="${images[r.id] || IMG_BASE + r.id + ".png"}" alt="${esc(r.name)}" width="${r.w}" height="${r.h}"></div>
+    <div class="ut-plate" style="width:${r.w}px;height:${r.h}px"><img ${imgAttrs(r.id, IMG_BASE + r.id + ".png")} alt="${esc(r.name)}" width="${r.w}" height="${r.h}"></div>
     <span class="ut-name">${esc(r.name)}${r.badge ? `<i>${r.badge}</i>` : ""}</span></div>`;
 }
 html += `<svg class="ut-svg" id="lsvg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true"></svg><div id="cxl"></div>`;
@@ -382,9 +425,34 @@ html += `<div class="cell-hl" id="hl"></div><div class="mk-layer" id="mks"></div
 ut.innerHTML = html;
 const lsvg = document.getElementById("lsvg"), cxl = document.getElementById("cxl");
 
+/* Zoom : ajusté à la largeur par défaut, + / − pour zoomer */
+const utw = document.getElementById("utw"), scrollEl = document.getElementById("scroll");
+let zoom = 1, zoomFit = true;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+function applyZoom() {
+  if (zoomFit) zoom = clamp((scrollEl.clientWidth - 16) / W, 0.25, 1);
+  ut.style.transform = `scale(${zoom})`;
+  utw.style.width = W * zoom + "px"; utw.style.height = H * zoom + "px";
+  const v = { z: zoom, ms: clamp(.6 / zoom, 1, 2), cs: clamp(.5 / zoom, 1, 1.8), ls: clamp(.5 / zoom, 1, 2.2), ns: clamp(.55 / zoom, 1, 2) };
+  v.ti = 1 / (zoom * v.ms);
+  for (const k in v) ut.style.setProperty("--" + k, v[k]);
+  document.getElementById("zl").textContent = Math.round(zoom * 100) + " %";
+}
+document.getElementById("zIn").onclick = () => { zoomFit = false; zoom = clamp(zoom * 1.25, .25, 2.5); applyZoom(); };
+document.getElementById("zOut").onclick = () => { zoomFit = false; zoom = clamp(zoom / 1.25, .25, 2.5); applyZoom(); };
+document.getElementById("zFit").onclick = () => { zoomFit = true; applyZoom(); };
+window.addEventListener("resize", () => { if (zoomFit) applyZoom(); });
+
+/* Afficher / masquer les liens gouffres et crevasses */
+const linksTg = document.getElementById("linksTg");
+try { if (localStorage.getItem("atlas-souterrain-nolinks") === "1") linksTg.checked = false; } catch (e) {}
+const applyLinks = () => ut.classList.toggle("nolinks", !linksTg.checked);
+linksTg.onchange = () => { applyLinks(); try { localStorage.setItem("atlas-souterrain-nolinks", linksTg.checked ? "0" : "1"); } catch (e) {} };
+applyLinks();
+
 let imgFails = 0;
 ut.querySelectorAll(".ut-plate img").forEach(img => {
-  img.addEventListener("error", () => { img.parentElement.classList.add("no-img"); if (++imgFails === 1) document.getElementById("imgwarn").hidden = false; });
+  img.addEventListener("error", () => { if (img.dataset.alt) { img.src = img.dataset.alt; img.removeAttribute("data-alt"); return; } img.parentElement.classList.add("no-img"); if (++imgFails === 1) document.getElementById("imgwarn").hidden = false; });
 });
 
 /* Passages (gouffres / crevasses) */
@@ -462,11 +530,14 @@ toolsEl.addEventListener("click", e => {
   setTool(tool === b.dataset.tool ? null : b.dataset.tool);
 });
 function setHint() {
-  if (READONLY) { hintEl.textContent = "Survolez une salle ou un chemin pour voir les passages empruntés. Cliquez un objet pour lire sa note, un chemin pour le suivre."; return; }
+  const touch = matchMedia("(hover: none)").matches;
+  if (READONLY) { hintEl.textContent = touch
+    ? "Touchez une salle pour voir ses passages, un objet pour lire sa note. Cochez des chemins dans la liste pour les mettre en évidence."
+    : "Survolez une salle ou un chemin pour voir les passages empruntés. Cliquez un objet pour lire sa note, un chemin pour le suivre."; return; }
   if (linking) { hintEl.innerHTML = `Nouveau <b>${LINK_KINDS[linking.k]}</b> depuis ${esc(refLabel(PT(linking.from)))} : cliquez le point d'arrivée. <kbd>Échap</kbd> annule.`; return; }
   if (editMode) {
     hintEl.innerHTML = tool
-      ? `Ajout : <b>${KINDS[tool.slice(4)]}</b> — cliquez des cases. <kbd>Échap</kbd> pour arrêter.`
+      ? `Ajout : <b>${KINDS[tool.slice(4)]}</b> — cliquez des cases. <span class="kb"><kbd>Échap</kbd> pour arrêter.</span>`
       : `Correction : <b>glissez</b> un point vers la bonne case, <b>cliquez-le</b> pour changer son type, ses passages ou décaler sa salle. `
         + `Tout décaler d'une case : <button class="btn" data-sh="-1,0">←</button><button class="btn" data-sh="1,0">→</button><button class="btn" data-sh="0,-1">↑</button><button class="btn" data-sh="0,1">↓</button>`
         + `<button class="btn danger" id="resetMap">Réinitialiser la carte</button>`;
@@ -478,11 +549,16 @@ function setHint() {
   if (tool === "path") {
     const n = draft ? draft.pts.length : 0;
     hintEl.innerHTML = `Chemin : cliquez les cases dans l'ordre du parcours (${n} point${n > 1 ? "s" : ""}). `
-      + `<kbd>Entrée</kbd> ou double-clic pour terminer · <kbd>⌫</kbd> retire le dernier point · <kbd>Échap</kbd> annule`
-      + (n >= 2 ? `<button class="btn primary" id="finish">Terminer</button>` : "");
+      + `<span class="kb"><kbd>Entrée</kbd> ou double-clic pour terminer · <kbd>⌫</kbd> retire le dernier point · <kbd>Échap</kbd> annule</span>`
+      + (n >= 1 ? `<button class="btn" id="undoPt">↶ Dernier point</button>` : "")
+      + (n >= 2 ? `<button class="btn primary" id="finish">Terminer</button>` : "")
+      + `<button class="btn" id="cancelPath">Annuler</button>`;
     const f = document.getElementById("finish"); if (f) f.onclick = () => finishDraft();
-  } else if (tool) hintEl.innerHTML = `Placement : <b>${esc(TYPES[tool].label)}</b> — cliquez sur une case. <kbd>Échap</kbd> ou re-cliquez le bouton pour arrêter.`;
+    const u = document.getElementById("undoPt"); if (u) u.onclick = () => { draft.pts.pop(); renderDraft(); setHint(); };
+    document.getElementById("cancelPath").onclick = () => { draft = null; setTool(null); };
+  } else if (tool) hintEl.innerHTML = `Placement : <b>${esc(TYPES[tool].label)}</b> — touchez ou cliquez une case. <span class="kb"><kbd>Échap</kbd> ou re-cliquez le bouton pour arrêter.</span><button class="btn" id="stopTool">Arrêter</button>`;
   else hintEl.textContent = "Choisissez un objet puis cliquez sur une case pour le placer, ou « Chemin » pour tracer un parcours fléché. Cliquez un marqueur ou un chemin pour le modifier, glissez pour déplacer.";
+  if (tool && !editMode && tool !== "path") { const st = document.getElementById("stopTool"); if (st) st.onclick = () => setTool(null); }
 }
 function setTool(t) {
   if (tool === "path" && t !== "path") finishDraft(true);
@@ -504,7 +580,7 @@ function setEdit(on) {
 const hl = document.getElementById("hl");
 function refAt(clientX, clientY, allowFree) {
   const box = ut.getBoundingClientRect();
-  const x = clientX - box.left, y = clientY - box.top;
+  const x = (clientX - box.left) / zoom, y = (clientY - box.top) / zoom;
   for (const r of ROOMS) {
     if (x >= r.l && x < r.l + r.w && y >= r.t && y < r.t + r.h)
       return { room: r.id, cx: Math.max(0, Math.min(Math.floor((x - r.l) / CELL), cols(r) - 1)), cy: Math.max(0, Math.min(Math.floor((y - r.t) / CELL), rows(r) - 1)) };
@@ -585,26 +661,23 @@ udefs.innerHTML = PATH_COLORS.map((c, i) =>
 ).join("");
 const colorIdx = c => Math.max(0, PATH_COLORS.indexOf(c));
 const ptsAttr = pts => pts.map(pos).map(p => `${p.x},${p.y}`).join(" ");
-/* Une seule flèche continue, aux virages arrondis */
-function roundedD(pts, r = 8) {
-  const P = pts.map(pos);
-  let d = `M${P[0].x} ${P[0].y}`;
-  for (let i = 1; i < P.length - 1; i++) {
-    const a = P[i - 1], b = P[i], c = P[i + 1];
-    const l1 = Math.hypot(a.x - b.x, a.y - b.y), l2 = Math.hypot(c.x - b.x, c.y - b.y);
-    if (!l1 || !l2) continue;
-    const rr = Math.min(r, l1 / 2, l2 / 2);
-    const s = { x: b.x + (a.x - b.x) / l1 * rr, y: b.y + (a.y - b.y) / l1 * rr };
-    const e = { x: b.x + (c.x - b.x) / l2 * rr, y: b.y + (c.y - b.y) / l2 * rr };
-    d += ` L${s.x} ${s.y} Q${b.x} ${b.y} ${e.x} ${e.y}`;
-  }
-  const z = P[P.length - 1];
-  return d + ` L${z.x} ${z.y}`;
-}
+/* Une seule flèche continue, virages francs ; en pointillés quand elle passe d'une salle à une autre */
+const polyD = pts => pts.map(pos).map((q, i) => `${i ? "L" : "M"}${q.x} ${q.y}`).join(" ");
+const isJump = (a, b) => !a.room || !b.room || a.room !== b.room;
 function lineSVG(pts, color, cls) {
   const i = colorIdx(color), p0 = pos(pts[0]);
-  return `<circle class="up-start" cx="${p0.x}" cy="${p0.y}" r="4" fill="${color}"/>`
-    + (pts.length > 1 ? `<path class="${cls}" d="${roundedD(pts)}" stroke="${color}" marker-end="url(#ah${i})"/>` : "");
+  let out = `<circle class="up-start" cx="${p0.x}" cy="${p0.y}" r="4" fill="${color}"/>`;
+  if (pts.length < 2) return out;
+  // découpe en tronçons : même salle (trait plein) / changement de salle (pointillés)
+  const runs = [];
+  for (let j = 1; j < pts.length; j++) {
+    const jump = isJump(pts[j - 1], pts[j]), last = runs[runs.length - 1];
+    if (last && last.jump === jump) last.pts.push(pts[j]); else runs.push({ jump, pts: [pts[j - 1], pts[j]] });
+  }
+  runs.forEach((r, k) => {
+    out += `<path class="${cls}${r.jump ? " jump" : ""}" d="${polyD(r.pts)}" stroke="${color}"${k === runs.length - 1 ? ` marker-end="url(#ah${i})"` : ""}/>`;
+  });
+  return out;
 }
 /* Passages empruntés par un chemin : un point du chemin est sur le départ ou l'arrivée,
    ou deux points consécutifs vont de la salle de départ à la salle d'arrivée. */
@@ -628,7 +701,7 @@ function renderPaths() {
   const anyHl = paths.some(p => p.hl);
   ulines.innerHTML = paths.map(p =>
     `<g class="up-g${p.id === selPath ? " sel" : ""}${pathsHidden ? " hidden" : ""}${p.hl ? " hl" : anyHl ? " faded" : ""}" data-id="${p.id}">${lineSVG(p.pts, p.color, "up-line")}`
-    + `<path class="up-hit" d="${roundedD(p.pts)}"><title>${esc(p.note || "Chemin")}</title></path></g>`).join("");
+    + `<path class="up-hit" d="${polyD(p.pts)}"><title>${esc(p.note || "Chemin")}</title></path></g>`).join("");
   highlightLinks();
   const sp = !READONLY && paths.find(p => p.id === selPath);
   uhandles.innerHTML = sp ? sp.pts.map((r, i) => { const q = pos(r); return `<circle class="up-handle" data-i="${i}" cx="${q.x}" cy="${q.y}" r="5" stroke="${sp.color}"><title>Glisser pour déplacer · double-clic pour supprimer ce point</title></circle>`; }).join("") : "";
@@ -699,7 +772,7 @@ mks.addEventListener("pointermove", e => {
   if (!drag.moved) return;
   drag.el.classList.add("dragging");
   const box = ut.getBoundingClientRect();
-  drag.el.style.left = (e.clientX - box.left) + "px"; drag.el.style.top = (e.clientY - box.top) + "px";
+  drag.el.style.left = (e.clientX - box.left) / zoom + "px"; drag.el.style.top = (e.clientY - box.top) / zoom + "px";
 });
 mks.addEventListener("pointerup", e => {
   if (!drag) return;
@@ -716,9 +789,12 @@ function closeEditor() {
   if (selPoint) { selPoint = null; renderPoints(); highlightLinks(); }
 }
 function placeEditor(p, hgt = 190) {
-  ed.style.left = Math.min(Math.max(p.x - 125, 0), W - 250) + "px";
-  ed.style.top = (p.y + 18 + hgt > H ? Math.max(0, p.y - hgt - 20) : p.y + 18) + "px";
-  ut.appendChild(ed);
+  const box = ut.getBoundingClientRect();
+  const sx = box.left + window.scrollX + p.x * zoom, sy = box.top + window.scrollY + p.y * zoom;
+  ed.style.left = clamp(sx - 125, window.scrollX + 8, window.scrollX + document.documentElement.clientWidth - 258) + "px";
+  const below = sy + 18 + hgt < window.scrollY + window.innerHeight;
+  ed.style.top = (below ? sy + 18 : Math.max(window.scrollY + 8, sy - hgt - 20)) + "px";
+  document.body.appendChild(ed);
   ed.addEventListener("pointerdown", e => e.stopPropagation());
 }
 function openMarkerEditor(id) {
@@ -926,7 +1002,7 @@ if (!READONLY) {
       ok++;
     }
     try { localStorage.setItem(IMG_KEY, JSON.stringify(images)); } catch (e) { alert("Images trop lourdes pour être mémorisées dans le navigateur, mais elles seront intégrées si vous exportez maintenant."); }
-    ut.querySelectorAll(".ut-room").forEach(el => { const src = images[el.dataset.room]; if (src) { const img = el.querySelector("img"); img.parentElement.classList.remove("no-img"); img.src = src; } });
+    ut.querySelectorAll(".ut-room").forEach(el => { const src = images[el.dataset.room]; if (src) { const img = el.querySelector("img"); img.parentElement.classList.remove("no-img"); img.removeAttribute("data-alt"); img.src = src; } });
     renderImgInfo(); renderToolbar(); renderBase(); renderMarkers(); renderList(); renderLegend();
     if (unknown.length) alert(`${ok} image(s) intégrée(s).\nNon reconnues (le nom doit rester celui d'origine, ex. floor_2.png, 365.gif) :\n${unknown.join("\n")}`);
     imgIn.value = "";
@@ -937,5 +1013,5 @@ if (!READONLY) {
 }
 
 function renderLegend() { document.querySelectorAll(".legend .cx-fire").forEach(b => { b.classList.remove("dot"); b.innerHTML = cxInner("fire"); }); }
-renderLegend(); renderToolbar(); setHint(); renderBase(); renderMarkers(); renderPaths(); renderList();
+applyZoom(); renderLegend(); renderToolbar(); setHint(); renderBase(); renderMarkers(); renderPaths(); renderList();
 </script></body></html>
