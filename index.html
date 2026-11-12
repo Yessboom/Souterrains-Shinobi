@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="fr"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Atlas du souterrain</title>
+<style>
+:root{
+  --bg:#14110f; --panel:#1d1915; --panel2:#26211b; --line:#3a3229; --text:#ece3d6; --muted:#a89b89;
+  --accent:#e0b062; --pit:#e0604f; --crev:#5fb3c9; --fire:#ff9d3c; --exit:#7fcf6a;
+  --plate:#2b251e;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+button{font:inherit;color:inherit}
+
+/* ---------- bar ---------- */
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:50}
+.bar h1{font-size:16px;margin:0 8px 0 0;letter-spacing:.02em}
+.bar small{color:var(--muted)}
+.tools{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+.tool{display:flex;align-items:center;gap:6px;padding:5px 10px;border:1px solid var(--line);background:var(--panel2);border-radius:8px;cursor:pointer}
+.tool:hover{border-color:var(--accent)}
+.tool[aria-pressed="true"]{border-color:var(--accent);background:#3b2f1f;box-shadow:0 0 0 1px var(--accent) inset}
+.tool img,.tool .ico{width:20px;height:20px;object-fit:contain;image-rendering:pixelated;display:inline-grid;place-items:center}
+.tool-sep{width:1px;background:var(--line);margin:0 2px}
+.hint{width:100%;color:var(--muted);font-size:12.5px;margin:0;min-height:1.45em}
+.hint b{color:var(--accent);font-weight:600}
+.hint kbd{font:11px ui-monospace,monospace;padding:0 4px;border:1px solid var(--line);border-radius:4px;background:var(--panel2);color:var(--text)}
+.hint .btn{padding:1px 8px;margin-left:6px;font-size:12px}
+
+/* ---------- layout ---------- */
+.main{display:grid;grid-template-columns:minmax(0,1fr) 290px;min-height:calc(100vh - 90px)}
+@media (max-width:900px){.main{grid-template-columns:1fr}}
+.scroll{overflow:auto;padding:30px 18px 18px}
+.side{border-left:1px solid var(--line);background:var(--panel);padding:14px;overflow:auto;max-height:calc(100vh - 90px);position:sticky;top:90px}
+@media (max-width:900px){.side{border-left:0;border-top:1px solid var(--line);max-height:none;position:static}}
+
+/* ---------- atlas ---------- */
+.ut{position:relative;margin:0 auto}
+.ut-layer{position:absolute;left:0;right:0;transform:translateY(-16px);border-bottom:1px dashed var(--line);color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.12em;padding:0 0 1px;pointer-events:none;text-align:right}
+.ut-layer i,.ut-name i{font-style:normal;margin-left:6px;padding:0 5px;border-radius:4px;background:var(--line);color:var(--text);font-size:10px;letter-spacing:0}
+.ut-room{position:absolute}
+.ut-plate{position:relative;background:var(--plate);border-radius:3px;box-shadow:0 0 0 1px #000,0 6px 18px rgba(0,0,0,.45);transition:box-shadow .15s,filter .15s}
+.ut-plate img{display:block;width:100%;height:100%;image-rendering:pixelated;border-radius:3px}
+.ut-plate.no-img{background:repeating-linear-gradient(0deg,transparent 0 18px,#ffffff10 18px 19px),repeating-linear-gradient(90deg,transparent 0 18px,#ffffff10 18px 19px),var(--plate)}
+.ut-plate.no-img img{display:none}
+.ut-room:hover .ut-plate{box-shadow:0 0 0 2px var(--accent),0 6px 18px rgba(0,0,0,.5)}
+.ut-name{position:absolute;left:-8px;top:-11px;z-index:3;white-space:nowrap;font-size:12px;font-weight:600;padding:1px 8px;border-radius:999px;background:#0d0b09e6;border:1px solid var(--line);transform:rotate(-3deg);pointer-events:none}
+.ut.dim .ut-room:not(.hot) .ut-plate{filter:brightness(.55)}
+
+.ut-svg{position:absolute;inset:0;pointer-events:none;z-index:4;overflow:visible}
+.ut-ln{fill:none;stroke-width:2;opacity:.13;transition:opacity .15s,stroke-width .15s}
+.ut-ln.is-pit{stroke:var(--pit)}
+.ut-ln.is-crevasse{stroke:var(--crev);stroke-dasharray:6 4}
+.ut-lt{font-size:10px;paint-order:stroke;stroke:#0d0b09;stroke-width:3px;opacity:0;text-anchor:middle;transition:opacity .15s}
+.ut-lt.is-pit{fill:var(--pit)} .ut-lt.is-crevasse{fill:var(--crev)}
+.ut.dim .ut-ln{opacity:.06}
+.ut-ln.hot,.ut-ln.phot,.ut.dim .ut-ln.hot{opacity:1;stroke-width:3}
+.ut-lt.hot,.ut-lt.phot{opacity:1}
+
+.cx{position:absolute;transform:translate(-50%,-50%);pointer-events:none;z-index:5}
+.cx-pit{width:11px;height:11px;border-radius:50%;background:#000;border:2px solid var(--pit)}
+.cx-crater{width:15px;height:15px;border-radius:50%;border:2px dashed var(--pit);background:#e0604f22}
+.cx-fire{width:18px;height:18px;display:grid;place-items:center}
+.cx-fire img{width:18px;height:18px;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 0 3px #ff9d3caa) drop-shadow(0 1px 1px #000)}
+.cx-fire.dot{width:9px;height:9px;border-radius:50%;background:var(--fire);box-shadow:0 0 6px 2px #ff9d3c99}
+.cx-exit{width:9px;height:9px;background:var(--exit);border:1px solid #0b2d07;border-radius:2px}
+.cx-crevasse{width:9px;height:9px;background:var(--crev);border:1px solid #062b35;transform:translate(-50%,-50%) rotate(45deg)}
+.cx-mount{color:var(--crev);font-size:12px;line-height:1;text-shadow:0 0 3px #000}
+
+/* ---------- user paths ---------- */
+.up-svg{position:absolute;inset:0;z-index:8;pointer-events:none;overflow:visible}
+.up-line{fill:none;stroke-width:3;stroke-linejoin:round;stroke-linecap:round;filter:drop-shadow(0 1px 1.5px #000)}
+.up-hit{fill:none;stroke:transparent;stroke-width:14;pointer-events:stroke;cursor:pointer}
+.ut.busy .up-hit{pointer-events:none}
+.up-start{stroke:#0d0b09;stroke-width:1.5}
+.up-g.sel .up-line,.up-g.hl .up-line{stroke-width:4}
+.up-g{opacity:.18;transition:opacity .15s}
+.up-g:hover{opacity:.7}
+.up-g.hl,.up-g.sel,.up-g.flash{opacity:1}
+.list .hlbox{margin:3px 0 0;flex:none;accent-color:var(--accent);cursor:pointer}
+.ptools{float:right;font-size:11px;text-transform:none;letter-spacing:0}
+.ptools button{background:none;border:0;color:var(--crev);cursor:pointer;padding:0 3px;font-size:11px}
+.up-g.flash .up-line{animation:pflash .5s ease 3}
+@keyframes pflash{50%{stroke-width:8}}
+.up-g.hidden{display:none}
+.up-draft{fill:none;stroke-width:3;stroke-dasharray:5 4;opacity:.9}
+.up-handle{fill:#0d0b09;stroke-width:2.5;pointer-events:all;cursor:move;touch-action:none}
+.up-handle:hover{fill:#fff}
+
+/* ---------- markers ---------- */
+.mk-layer{position:absolute;inset:0;z-index:10;pointer-events:none}
+.mk{position:absolute;width:22px;height:22px;transform:translate(-50%,-50%);pointer-events:auto;cursor:grab;touch-action:none;display:grid;place-items:center;border-radius:5px;background:#0d0b09cc;box-shadow:0 0 0 1px var(--mkc,#e0b062),0 2px 6px #000}
+.ut.busy .mk{pointer-events:none}
+.mk.small{width:16px;height:16px;border-radius:4px}
+.mk.small img{width:13px;height:13px}
+.mk.small .ico{font-size:10px}
+.mk img{width:18px;height:18px;object-fit:contain;image-rendering:pixelated;pointer-events:none}
+.mk .ico{font-size:13px;pointer-events:none}
+.mk:hover{z-index:2;box-shadow:0 0 0 2px var(--mkc,#e0b062),0 2px 8px #000}
+.mk.dragging{cursor:grabbing;opacity:.85}
+.mk.flash{animation:flash 1s ease 2}
+@keyframes flash{50%{transform:translate(-50%,-50%) scale(1.8)}}
+.mk .tip{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);white-space:pre-wrap;width:max-content;max-width:220px;background:#0d0b09;border:1px solid var(--line);padding:5px 8px;border-radius:6px;font-size:12px;display:none;pointer-events:none}
+.mk:hover .tip{display:block}
+.mk.hidden{display:none}
+.cell-hl{position:absolute;width:19px;height:19px;border:2px solid var(--accent);border-radius:3px;pointer-events:none;z-index:9;display:none;background:#e0b06233;transform:translate(-50%,-50%)}
+.cell-hl.free{width:9px;height:9px;border-radius:50%}
+.ut.placing{cursor:crosshair}
+
+/* ---------- editor ---------- */
+.ed{position:absolute;z-index:30;width:250px;background:var(--panel);border:1px solid var(--accent);border-radius:10px;padding:10px;box-shadow:0 10px 30px #000a}
+.ed h3{margin:0 0 8px;font-size:13px;color:var(--muted);font-weight:500}
+.ed .types{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+.ed .sw{width:22px;height:22px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0}
+.ed .sw[aria-pressed="true"]{border-color:#fff;box-shadow:0 0 0 1px #000}
+.ed textarea{width:100%;min-height:62px;resize:vertical;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:6px;font:inherit}
+.ed .row{display:flex;justify-content:space-between;margin-top:8px;gap:6px;flex-wrap:wrap}
+.btn{padding:5px 12px;border:1px solid var(--line);background:var(--panel2);border-radius:7px;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:#1b1408;border-color:var(--accent);font-weight:600}
+.btn.danger:hover{border-color:var(--pit);color:var(--pit)}
+
+/* ---------- side panel ---------- */
+.side h2{font-size:13px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:4px 0 8px}
+.filters label{display:flex;align-items:center;gap:8px;padding:3px 0;cursor:pointer}
+.filters img,.filters .ico{width:18px;height:18px;object-fit:contain;image-rendering:pixelated;display:inline-grid;place-items:center}
+.filters .n{margin-left:auto;color:var(--muted);font-variant-numeric:tabular-nums}
+.list{margin:6px 0 14px;padding:0;list-style:none}
+.list .room{color:var(--accent);font-size:12px;margin:10px 0 3px;font-weight:600}
+.list li.item{display:flex;align-items:flex-start;gap:8px;padding:4px 6px;border-radius:6px;cursor:pointer}
+.list li.item:hover{background:var(--panel2)}
+.list li.item img,.list li.item .ico{width:18px;height:18px;flex:none;object-fit:contain;image-rendering:pixelated;display:inline-grid;place-items:center}
+.list .swatch{width:18px;height:4px;border-radius:2px;flex:none;margin-top:8px}
+.list .txt{font-size:12.5px;color:var(--text);word-break:break-word}
+.list .txt.empty{color:var(--muted);font-style:italic}
+.empty-state{color:var(--muted);font-size:12.5px}
+.actions{display:flex;flex-wrap:wrap;gap:6px}
+.legend{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--muted);margin-top:16px;padding-top:12px;border-top:1px solid var(--line)}
+.legend span{display:flex;align-items:center;gap:8px}
+.legend .cx{position:static;transform:none;flex:none}
+.legend .cx-crevasse{transform:rotate(45deg)}
+.legend .sw{width:22px;height:0;border-top:2px solid var(--pit);flex:none}
+.legend .sw.c{border-top:2px dashed var(--crev)}
+.warn{font-size:12px;color:var(--fire);margin:0}
+
+/* ---------- edit mode / read-only ---------- */
+.ut.editing #cxl .cx{pointer-events:auto;cursor:grab;z-index:12;touch-action:none}
+.ut.editing #cxl .cx::after{content:"";position:absolute;inset:-6px}
+.ut.editing #cxl .cx-crevasse::after{inset:-5px}
+.ut.editing #cxl .cx.sel{outline:2px solid #fff;outline-offset:3px}
+.ut.editing #cxl .cx.dragging{cursor:grabbing}
+.ut.editing .ut-ln{opacity:.5}
+.ut.editing .ut-lt{opacity:.6}
+.ut.editing .mk-layer,.ut.editing .up-svg{opacity:.3}
+.ut.editing .mk,.ut.editing .up-hit{pointer-events:none}
+.ut.linking #cxl .cx{cursor:cell}
+.bar.editing{background:#2a2016;border-bottom-color:var(--accent)}
+.ed .links{list-style:none;margin:0 0 8px;padding:0;font-size:12px}
+.ed .links li{display:flex;align-items:center;gap:6px;padding:2px 0}
+.ed .links li span{flex:1}
+.ed .links button{border:0;background:none;color:var(--muted);cursor:pointer;font-size:14px;padding:0 4px}
+.ed .links button:hover{color:var(--pit)}
+.ed .lbl{font-size:11.5px;color:var(--muted);margin:8px 0 4px}
+.ed .arrows{display:flex;gap:4px}
+.ed .arrows .btn{padding:2px 9px}
+.ed .types .tool{padding:4px 7px;font-size:12px}
+.ed .types .tool .cx{position:static;transform:none;display:inline-block}
+.ed .types .tool .cx-crevasse{transform:rotate(45deg)}
+.tool .cx{position:static;transform:none;display:inline-block}
+.tool .cx-crevasse{transform:rotate(45deg)}
+.share{margin-top:16px;padding-top:12px;border-top:1px solid var(--line)}
+.share p{font-size:12px;color:var(--muted);margin:6px 0}
+.share details{font-size:12px;color:var(--muted);margin-top:6px}
+.share details a{color:var(--crev);display:block;word-break:break-all;padding:1px 0}
+.share details a.ok{color:var(--exit)}
+.share details a.ok::after{content:" ✓"}
+.ro-note{font-size:12px;color:var(--muted)}
+.mk.pin .tip{display:block}
+body.readonly [data-edit-only]{display:none !important}
+body:not(.readonly) [data-ro-only]{display:none !important}
+</style>
+</head>
+<body>
+
+<div class="bar" id="bar">
+  <h1 id="title">Atlas du souterrain</h1>
+  <small id="subtitle">11 salles · tout est visible</small>
+  <div class="tools" id="tools" data-edit-only=""></div>
+  <p class="hint" id="hint"></p>
+</div>
+
+<div class="main">
+  <div class="scroll"><div class="ut" id="ut"></div></div>
+  <aside class="side">
+    <h2>Objets</h2>
+    <div class="filters" id="filters"></div>
+    <h2 style="margin-top:14px">Emplacements</h2>
+    <ul class="list" id="list"></ul>
+    <h2>Chemins <span class="ptools" title="Choisir les chemins mis en évidence"><button id="hlAll">tous</button>·<button id="hlNone">aucun</button></span></h2>
+    <ul class="list" id="plist"></ul>
+
+    <div class="actions" data-edit-only="">
+      <button class="btn" id="exp" title="Sauvegarde modifiable (objets, chemins et corrections de la carte)">Sauvegarder (.json)</button>
+      <button class="btn" id="imp">Restaurer</button>
+      <button class="btn danger" id="clr">Tout effacer</button>
+      <input type="file" id="file" accept="application/json,.json" hidden="">
+    </div>
+
+    <div class="share" data-edit-only="">
+      <h2>Partager</h2>
+      <button class="btn primary" id="expAtlas">Exporter l'atlas (lecture seule)</button>
+      <p>Crée un fichier HTML unique avec la carte, les objets et les chemins. Tout le monde peut l'ouvrir et l'explorer, personne ne peut le modifier.</p>
+      <button class="btn" id="imgBtn">Intégrer les images…</button> <span class="ro-note" id="imgCount"></span>
+      <input type="file" id="imgFile" accept="image/*" multiple="" hidden="">
+      <p>Facultatif : intègre les plans des salles et les icônes dans le fichier exporté, pour qu'il s'affiche partout sans dépendre de shinobi.fr. Enregistrez les images ci-dessous (clic droit → enregistrer), puis sélectionnez-les toutes.</p>
+      <details><summary>Liens des images</summary><div id="imgLinks"></div></details>
+    </div>
+
+    <p class="ro-note" data-ro-only="" id="roNote"></p>
+    <p class="warn" id="imgwarn" hidden="" style="margin-top:10px">Les images des salles n'ont pas pu être chargées — la grille est affichée à la place.</p>
+    <div class="legend">
+      <span><i class="sw"></i>gouffre : on tombe dans un cratère, sans retour</span>
+      <span><i class="sw c"></i>crevasse : on descend à la pioche, on remonte par le mont</span>
+      <span><b class="cx cx-pit"></b>gouffre (départ)</span>
+      <span><b class="cx cx-crater"></b>cratère (arrivée)</span>
+      <span><b class="cx cx-crevasse"></b>crevasse</span>
+      <span><b class="cx cx-mount">▲</b>mont</span>
+      <span><b class="cx cx-fire"></b>feu</span>
+      <span><b class="cx cx-exit"></b>sortie</span>
+    </div>
+  </aside>
+</div>
+
+<script id="atlas-data" type="application/json">{"readonly":true,"exportedAt":"2026-11-12T17:15:03.105Z","map":{"points":[{"id":"p0","k":"pit","room":"north_entrance","cx":12,"cy":5},{"id":"p1","k":"pit","room":"north_entrance","cx":8,"cy":6},{"id":"p2","k":"fire","room":"north_entrance","cx":2,"cy":1},{"id":"p3","k":"exit","room":"north_entrance","cx":1,"cy":1},{"id":"p4","k":"pit","room":"ukabu_sewers","cx":0,"cy":1},{"id":"p5","k":"exit","room":"ukabu_sewers","cx":1,"cy":3},{"id":"p6","k":"pit","room":"mizuho_entrance","cx":3,"cy":1},{"id":"p7","k":"pit","room":"mizuho_entrance","cx":1,"cy":2},{"id":"p8","k":"fire","room":"mizuho_entrance","cx":1,"cy":2},{"id":"p9","k":"pit","room":"south_entrance","cx":13,"cy":1},{"id":"p10","k":"pit","room":"south_entrance","cx":1,"cy":4},{"id":"p11","k":"fire","room":"south_entrance","cx":4,"cy":3},{"id":"p12","k":"exit","room":"south_entrance","cx":4,"cy":4},{"id":"p13","k":"pit","room":"cavern_a","cx":5,"cy":1},{"id":"p14","k":"crevasse","room":"cavern_a","cx":2,"cy":2},{"id":"p15","k":"fire","room":"cavern_a","cx":4,"cy":1},{"id":"p16","k":"crater","room":"cavern_a","cx":1,"cy":1},{"id":"p17","k":"crevasse","room":"cavern_c","cx":4,"cy":2},{"id":"p18","k":"fire","room":"cavern_c","cx":3,"cy":2},{"id":"p19","k":"crater","room":"cavern_c","cx":5,"cy":1},{"id":"p20","k":"pit","room":"hidden_north_top","cx":1,"cy":1},{"id":"p21","k":"crater","room":"hidden_north_top","cx":5,"cy":3},{"id":"p22","k":"pit","room":"cavern_b","cx":1,"cy":2},{"id":"p23","k":"pit","room":"cavern_b","cx":8,"cy":5},{"id":"p24","k":"fire","room":"cavern_b","cx":6,"cy":3},{"id":"p25","k":"crater","room":"cavern_b","cx":6,"cy":2},{"id":"p26","k":"pit","room":"cavern_1_5","cx":4,"cy":1},{"id":"p27","k":"crater","room":"cavern_1_5","cx":1,"cy":1},{"id":"p28","k":"mount","room":"floor_2","cx":3,"cy":5},{"id":"p29","k":"mount","room":"floor_2","cx":10,"cy":6},{"id":"p30","k":"crevasse","room":"floor_2","cx":6,"cy":12},{"id":"p31","k":"crevasse","room":"floor_2","cx":7,"cy":18},{"id":"p32","k":"fire","room":"floor_2","cx":12,"cy":2},{"id":"p33","k":"fire","room":"floor_2","cx":4,"cy":7},{"id":"p34","k":"fire","room":"floor_2","cx":1,"cy":15},{"id":"p35","k":"exit","room":"floor_2","cx":13,"cy":0},{"id":"p36","k":"exit","room":"floor_2","cx":15,"cy":1},{"id":"p37","k":"crater","room":"floor_2","cx":6,"cy":5},{"id":"p38","k":"crater","room":"floor_2","cx":4,"cy":17},{"id":"p39","k":"crater","room":"floor_2","cx":9,"cy":18},{"id":"p40","k":"crater","room":"floor_2","cx":9,"cy":12},{"id":"p41","k":"crater","room":"floor_2","cx":7,"cy":6},{"id":"p42","k":"crater","room":"floor_2","cx":11,"cy":17},{"id":"p43","k":"crater","room":"floor_2","cx":5,"cy":15},{"id":"p44","k":"mount","room":"floor_3","cx":3,"cy":11},{"id":"p45","k":"mount","room":"floor_3","cx":8,"cy":12},{"id":"p46","k":"fire","room":"floor_3","cx":9,"cy":13},{"id":"p47","k":"crater","room":"floor_3","cx":9,"cy":13},{"id":"p48","k":"pit","room":"ghost_king","cx":2,"cy":4}],"links":[{"id":"l0","k":"pit","a":"p0","b":"p19"},{"id":"l1","k":"pit","a":"p1","b":"p16"},{"id":"l2","k":"pit","a":"p13","b":"p37"},{"id":"l3","k":"pit","a":"p9","b":"p27"},{"id":"l4","k":"pit","a":"p10","b":"p25"},{"id":"l5","k":"pit","a":"p22","b":"p38"},{"id":"l6","k":"pit","a":"p23","b":"p39"},{"id":"l7","k":"pit","a":"p26","b":"p40"},{"id":"l8","k":"pit","a":"p4","b":"p21"},{"id":"l9","k":"pit","a":"p20","b":"p41"},{"id":"l10","k":"pit","a":"p6","b":"p42"},{"id":"l11","k":"pit","a":"p7","b":"p43"},{"id":"l12","k":"pit","a":"p48","b":"p47"},{"id":"l13","k":"crevasse","a":"p14","b":"p28"},{"id":"l14","k":"crevasse","a":"p17","b":"p29"},{"id":"l15","k":"crevasse","a":"p30","b":"p44"},{"id":"l16","k":"crevasse","a":"p31","b":"p45"}]},"markers":[{"id":"ezcdiprp","type":"inscription","room":"floor_3","cx":10,"cy":13,"note":"Bloc de lave"},{"id":"in9sv3gt","type":"journal","room":"floor_3","cx":9,"cy":12,"note":"Feuille 7/7"},{"id":"zm95xg5e","type":"journal","room":"floor_3","cx":4,"cy":11,"note":"Feuille 6/7"},{"id":"odr6lcrx","type":"journal","room":"floor_2","cx":6,"cy":12,"note":"Feuille 5/7"},{"id":"jcaijp5o","type":"journal","room":"floor_2","cx":4,"cy":12,"note":"Feuille 4/7"},{"id":"dcl1yywy","type":"journal","room":"floor_2","cx":4,"cy":14,"note":"Feuille 3/7"},{"id":"pbfynu47","type":"journal","room":"south_entrance","cx":2,"cy":4,"note":"Feuille 1/7"},{"id":"hw3xaqlr","type":"journal","room":"cavern_b","cx":6,"cy":3,"note":"Feuille 2/7"},{"id":"iz7q4knn","type":"inscription","room":"floor_2","cx":12,"cy":12,"note":"Zone Ravagée"},{"id":"9zosikvh","type":"inscription","room":"floor_2","cx":12,"cy":15,"note":"Gros Rocher"},{"id":"5lo77z0o","type":"inscription","room":"floor_2","cx":7,"cy":14,"note":"Charbon"},{"id":"8rybprp9","type":"inscription","room":"floor_2","cx":6,"cy":16,"note":"Stalactite"},{"id":"07cxh9n7","type":"inscription","room":"floor_2","cx":14,"cy":2,"note":"Rivière"}],"paths":[{"id":"x6gfc7y5","color":"#f2c14e","note":"Chemin Sud (25 PA jusqu'au trésor)","pts":[{"room":"south_entrance","cx":4,"cy":4},{"room":"south_entrance","cx":4,"cy":3},{"room":"south_entrance","cx":12,"cy":3},{"room":"south_entrance","cx":12,"cy":1},{"room":"south_entrance","cx":13,"cy":1},{"room":"cavern_1_5","cx":1,"cy":1},{"room":"cavern_1_5","cx":4,"cy":1},{"room":"floor_2","cx":9,"cy":12},{"room":"floor_2","cx":10,"cy":12},{"room":"floor_2","cx":10,"cy":11},{"room":"floor_2","cx":12,"cy":11},{"room":"floor_2","cx":12,"cy":10},{"room":"floor_2","cx":13,"cy":10}]},{"id":"3f3hqpyu","color":"#6fd08c","note":"Chemin cimetière (21 jusqu'au trésor). Nécéssite de se téléporter au cimetière avec le recueil.","pts":[{"room":"ghost_king","cx":2,"cy":3},{"room":"ghost_king","cx":2,"cy":4},{"room":"floor_3","cx":9,"cy":13},{"room":"floor_3","cx":8,"cy":13},{"room":"floor_3","cx":8,"cy":12},{"room":"floor_2","cx":7,"cy":18},{"room":"floor_2","cx":9,"cy":18},{"room":"floor_2","cx":9,"cy":15},{"room":"floor_2","cx":12,"cy":15},{"room":"floor_2","cx":12,"cy":10},{"room":"floor_2","cx":13,"cy":10}],"hl":false},{"id":"uyx0ccq1","color":"#5fb3c9","note":"Chemin Mizuho (18 PA depuis l'embouchure jusqu'au trésor). CHEMIN LE PLUS RAPIDE.","pts":[{"room":"mizuho_entrance","cx":2,"cy":1},{"room":"mizuho_entrance","cx":3,"cy":1},{"room":"floor_2","cx":11,"cy":17},{"room":"floor_2","cx":9,"cy":17},{"room":"floor_2","cx":9,"cy":15},{"room":"floor_2","cx":12,"cy":15},{"room":"floor_2","cx":12,"cy":10},{"room":"floor_2","cx":13,"cy":10}]},{"id":"5s72i5dz","color":"#c792ea","note":"Chemin Nord ( 27 PA jusqu'au trésor).","pts":[{"room":"north_entrance","cx":1,"cy":1},{"room":"north_entrance","cx":1,"cy":4},{"room":"north_entrance","cx":11,"cy":4},{"room":"north_entrance","cx":11,"cy":5},{"room":"north_entrance","cx":12,"cy":5},{"room":"cavern_c","cx":5,"cy":1},{"room":"cavern_c","cx":5,"cy":2},{"room":"cavern_c","cx":4,"cy":2},{"room":"floor_2","cx":10,"cy":5},{"room":"floor_2","cx":12,"cy":5},{"room":"floor_2","cx":12,"cy":7},{"room":"floor_2","cx":13,"cy":7},{"room":"floor_2","cx":13,"cy":8}]}],"images":{}}</script>
+<script>
+/* ===== Mode : éditable ou atlas exporté en lecture seule ===== */
+const EMBED = (() => { try { return JSON.parse(document.getElementById("atlas-data").textContent); } catch (e) { return null; } })();
+const READONLY = !!(EMBED && EMBED.readonly);
+// Copie du fichier tel qu'il a été chargé, utilisée pour générer l'atlas exporté
+const PRISTINE = READONLY ? "" : "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+if (READONLY) document.body.classList.add("readonly");
+
+/* ===== Configuration ===== */
+const IMG_BASE = "https://www.shinobi.fr/static/images/carte/underground/rooms-plan4/";
+const CELL = 19;
+const STORE_KEY = "atlas-souterrain-v3";
+const MAP_BASE = 2; // version des positions par défaut
+const OLD_KEYS = ["atlas-souterrain-v2", "atlas-souterrain-marqueurs-v1"];
+const IMG_KEY = "atlas-souterrain-images";
+
+// Types d'objets plaçables — ajoutez-en ici si besoin (imgKey = nom du fichier image à intégrer)
+const TYPES = {
+  journal:     { label: "Feuille de journal", img: "https://images.shinobi.fr/images/objets/feuille/365.gif", imgKey: "365", fallback: "📜", color: "#e0b062" },
+  inscription: { label: "Note d'inscription", img: "https://images.shinobi.fr/images/objets/feuille/370.gif", imgKey: "370", fallback: "📝", color: "#9fc7ff" },
+  note:        { label: "Autre note",         img: null, fallback: "📌", color: "#d78bd8" }
+};
+const FIRE_IMG = "https://images.shinobi.fr/images/cartes_plus/flambeau.gif";
+const KINDS = { pit: "Gouffre", crater: "Cratère", crevasse: "Crevasse", mount: "Mont", fire: "Feu", exit: "Sortie" };
+const LINK_KINDS = { pit: "gouffre", crevasse: "crevasse" };
+const PATH_COLORS = ["#f2c14e", "#6fd08c", "#5fb3c9", "#c792ea", "#ff8fab", "#ffffff"];
+
+/* ===== Données de l'atlas ===== */
+const W = 1040, H = 859;
+const LAYERS = [ {top:0, label:"Les entrées", badge:"-1"}, {top:226, label:"Les sous-galeries"}, {top:433, label:"Les profondeurs"} ];
+const ROOMS = [
+  {id:"north_entrance",  name:"Entrée Nord",       badge:"-1", l:29.5,  t:22,  w:266, h:152},
+  {id:"ukabu_sewers",    name:"Égouts",                        l:400.5, t:22,  w:57,  h:95},
+  {id:"mizuho_entrance", name:"Cabane Mizuho",                 l:487.5, t:22,  w:95,  h:76},
+  {id:"south_entrance",  name:"Entrée Sud",        badge:"-1", l:706.5, t:22,  w:285, h:152},
+  {id:"cavern_a",        name:"Nord-ouest",                    l:14.5,  t:248, w:133, h:95},
+  {id:"cavern_c",        name:"Nord-est",                      l:177.5, t:248, w:133, h:95},
+  {id:"hidden_north_top",name:"Salle cachée",                  l:425,   t:248, w:133, h:95},
+  {id:"cavern_b",        name:"Sud-ouest",                     l:672.5, t:248, w:209, h:133},
+  {id:"cavern_1_5",      name:"Sud-est",                       l:911.5, t:248, w:114, h:57},
+  {id:"floor_2",         name:"Galerie principale",badge:"-2", l:69.5,  t:455, w:304, h:380},
+  {id:"floor_3",         name:"Les Abysses",       badge:"-3", l:453.5, t:455, w:342, h:380},
+  {id:"ghost_king",      name:"Tombeau",                       l:875.5, t:455, w:95,  h:114}
+];
+const ROOM = Object.fromEntries(ROOMS.map(r => [r.id, r]));
+
+/* Points de départ (colonne, ligne dans chaque salle) — corrigeables avec « Corriger la carte » */
+const POINTS = [
+  ["pit","north_entrance",12,5],["pit","north_entrance",8,6],["fire","north_entrance",2,1],["exit","north_entrance",1,1],
+  ["pit","ukabu_sewers",0,1],["exit","ukabu_sewers",1,3],
+  ["pit","mizuho_entrance",3,1],["pit","mizuho_entrance",1,2],["fire","mizuho_entrance",1,1],
+  ["pit","south_entrance",13,1],["pit","south_entrance",1,4],["fire","south_entrance",4,3],["exit","south_entrance",4,4],
+  ["pit","cavern_a",5,1],["crevasse","cavern_a",2,2],["fire","cavern_a",4,1],["crater","cavern_a",1,1],
+  ["crevasse","cavern_c",4,2],["fire","cavern_c",3,2],["crater","cavern_c",5,1],
+  ["pit","hidden_north_top",1,1],["crater","hidden_north_top",5,3],
+  ["pit","cavern_b",1,2],["pit","cavern_b",8,5],["fire","cavern_b",6,3],["crater","cavern_b",6,2],
+  ["pit","cavern_1_5",4,1],["crater","cavern_1_5",1,1],
+  ["mount","floor_2",3,5],["mount","floor_2",10,5],["crevasse","floor_2",6,12],["crevasse","floor_2",7,18],
+  ["fire","floor_2",12,2],["fire","floor_2",4,7],["fire","floor_2",1,15],["exit","floor_2",13,0],["exit","floor_2",15,1],
+  ["crater","floor_2",6,5],["crater","floor_2",4,17],["crater","floor_2",9,18],["crater","floor_2",9,12],
+  ["crater","floor_2",7,6],["crater","floor_2",11,17],["crater","floor_2",5,15],
+  ["mount","floor_3",3,11],["mount","floor_3",8,12],["fire","floor_3",9,13],["crater","floor_3",9,13],
+  ["pit","ghost_king",2,4]
+];
+const LINKS = [
+  ["pit",["north_entrance",12,5],["cavern_c",5,1]], ["pit",["north_entrance",8,6],["cavern_a",1,1]],
+  ["pit",["cavern_a",5,1],["floor_2",6,5]], ["pit",["south_entrance",13,1],["cavern_1_5",1,1]],
+  ["pit",["south_entrance",1,4],["cavern_b",6,2]], ["pit",["cavern_b",1,2],["floor_2",4,17]],
+  ["pit",["cavern_b",8,5],["floor_2",9,18]], ["pit",["cavern_1_5",4,1],["floor_2",9,12]],
+  ["pit",["ukabu_sewers",0,1],["hidden_north_top",5,3]], ["pit",["hidden_north_top",1,1],["floor_2",7,6]],
+  ["pit",["mizuho_entrance",3,1],["floor_2",11,17]], ["pit",["mizuho_entrance",1,2],["floor_2",5,15]],
+  ["pit",["ghost_king",2,4],["floor_3",9,13]],
+  ["crevasse",["cavern_a",2,2],["floor_2",3,5]], ["crevasse",["cavern_c",4,2],["floor_2",10,5]],
+  ["crevasse",["floor_2",6,12],["floor_3",3,11]], ["crevasse",["floor_2",7,18],["floor_3",8,12]]
+];
+function defaultMap() {
+  const points = POINTS.map(([k, room, cx, cy], i) => ({ id: "p" + i, k, room, cx, cy }));
+  const find = (k, [room, cx, cy]) => (points.find(p => p.k === k && p.room === room && p.cx === cx && p.cy === cy) || {}).id;
+  const links = LINKS.map(([k, A, B], i) => ({ id: "l" + i, k,
+    a: find(k === "pit" ? "pit" : "crevasse", A), b: find(k === "pit" ? "crater" : "mount", B) })).filter(l => l.a && l.b);
+  return { points, links };
+}
+
+/* ===== Utilitaires ===== */
+const cc = (room, cx, cy) => { const r = ROOM[room]; return { x: r.l + cx * CELL + CELL / 2, y: r.t + cy * CELL + CELL / 2 }; };
+const pos = ref => ref.room ? cc(ref.room, ref.cx, ref.cy) : { x: ref.x, y: ref.y };
+const sameRef = (a, b) => !!(a && b) && (a.room ? a.room === b.room && a.cx === b.cx && a.cy === b.cy : !b.room && a.x === b.x && a.y === b.y);
+const uid = () => Math.random().toString(36).slice(2, 10);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const refLabel = ref => ref.room ? `${ROOM[ref.room].name} (${ref.cx + 1}, ${ref.cy + 1})` : "hors salle";
+const cols = r => Math.floor(r.w / CELL), rows = r => Math.floor(r.h / CELL);
+function download(text, name, type) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+/* ===== État ===== */
+let markers = [], paths = [], map = null, images = {};
+let hiddenTypes = new Set(), pathsHidden = false;
+let tool = null, draft = null, selPath = null, editMode = false, selPoint = null, linking = null;
+if (READONLY) {
+  markers = EMBED.markers || []; paths = EMBED.paths || []; map = EMBED.map; images = EMBED.images || {};
+} else {
+  try {
+    let d = JSON.parse(localStorage.getItem(STORE_KEY) || "null");
+    if (!d) { const v2 = JSON.parse(localStorage.getItem(OLD_KEYS[0]) || "null"); if (v2) d = v2; else d = { markers: JSON.parse(localStorage.getItem(OLD_KEYS[1]) || "[]") }; }
+    markers = d.markers || []; paths = d.paths || []; map = d.map || null;
+    if (map && (d.mapBase || 1) < MAP_BASE) {
+      // ancienne version de la carte : si elle n'a pas été corrigée à la main, on prend la nouvelle
+      const old = defaultMap(); old.points.forEach(p => p.cy += 1);
+      const sig = m => JSON.stringify(m.points.map(p => [p.k, p.room, p.cx, p.cy]).sort()) + JSON.stringify(m.links.length);
+      if (sig(old) === sig(map)) map = null;
+    }
+  } catch (e) {}
+  try { images = JSON.parse(localStorage.getItem(IMG_KEY) || "{}"); } catch (e) { images = {}; }
+}
+if (!map || !Array.isArray(map.points)) map = defaultMap();
+const save = () => {
+  if (!READONLY) try { localStorage.setItem(STORE_KEY, JSON.stringify({ markers, paths, map, mapBase: MAP_BASE })); } catch (e) {}
+  renderList();
+};
+const PT = id => map.points.find(p => p.id === id);
+
+const iconSrc = k => { const t = TYPES[k]; return t && ((t.imgKey && images[t.imgKey]) || t.img); };
+function iconHTML(type) {
+  const t = TYPES[type] || TYPES.note, src = iconSrc(type);
+  if (!src) return `<span class="ico">${t.fallback}</span>`;
+  return `<img src="${src}" alt="" onerror="this.outerHTML='<span class=&quot;ico&quot;>${t.fallback}</span>'">`;
+}
+const cxInner = k => k === "mount" ? "▲" : k === "fire" ? `<img src="${images.flambeau || FIRE_IMG}" alt="" onerror="this.parentNode.classList.add('dot');this.remove()">` : "";
+const kindDot = k => `<b class="cx cx-${k}">${cxInner(k)}</b>`;
+
+/* ===== Construction de l'atlas ===== */
+const ut = document.getElementById("ut");
+ut.style.width = W + "px"; ut.style.height = H + "px";
+let html = "";
+for (const L of LAYERS) html += `<div class="ut-layer" style="top:${L.top}px">${L.label}${L.badge ? `<i>${L.badge}</i>` : ""}</div>`;
+for (const r of ROOMS) {
+  html += `<div class="ut-room" data-room="${r.id}" style="left:${r.l}px;top:${r.t}px;width:${r.w}px;height:${r.h}px">
+    <div class="ut-plate" style="width:${r.w}px;height:${r.h}px"><img src="${images[r.id] || IMG_BASE + r.id + ".png"}" alt="${esc(r.name)}" width="${r.w}" height="${r.h}"></div>
+    <span class="ut-name">${esc(r.name)}${r.badge ? `<i>${r.badge}</i>` : ""}</span></div>`;
+}
+html += `<svg class="ut-svg" id="lsvg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true"></svg><div id="cxl"></div>`;
+html += `<svg class="up-svg" id="usvg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><defs id="udefs"></defs><g id="ulines"></g><g id="udraft"></g><g id="uhandles"></g></svg>`;
+html += `<div class="cell-hl" id="hl"></div><div class="mk-layer" id="mks"></div>`;
+ut.innerHTML = html;
+const lsvg = document.getElementById("lsvg"), cxl = document.getElementById("cxl");
+
+let imgFails = 0;
+ut.querySelectorAll(".ut-plate img").forEach(img => {
+  img.addEventListener("error", () => { img.parentElement.classList.add("no-img"); if (++imgFails === 1) document.getElementById("imgwarn").hidden = false; });
+});
+
+/* Passages (gouffres / crevasses) */
+function renderLinks() {
+  let s = "";
+  for (const L of map.links) {
+    const A = PT(L.a), B = PT(L.b); if (!A || !B) continue;
+    const a = opos(A), b = opos(B);
+    let c1, c2;
+    if (b.y - a.y > 40) { const d = (b.y - a.y) / 2; c1 = { x: a.x, y: a.y + d }; c2 = { x: b.x, y: b.y - d }; }
+    else if (a.y - b.y > 40) { const d = (a.y - b.y) / 2; c1 = { x: a.x, y: a.y - d }; c2 = { x: b.x, y: b.y + d }; }
+    else { const y = Math.max(a.y, b.y) + 70; c1 = { x: a.x + (b.x - a.x) * .25, y }; c2 = { x: a.x + (b.x - a.x) * .75, y }; }
+    const mx = (a.x + 3 * c1.x + 3 * c2.x + b.x) / 8, my = (a.y + 3 * c1.y + 3 * c2.y + b.y) / 8;
+    const attrs = `data-lid="${L.id}" data-a="${A.room}" data-b="${B.room}"`;
+    s += `<path class="ut-ln is-${L.k}" ${attrs} d="M${a.x} ${a.y} C${c1.x} ${c1.y} ${c2.x} ${c2.y} ${b.x} ${b.y}"/>`
+       + `<text class="ut-lt is-${L.k}" ${attrs} x="${mx}" y="${my - 3}">${LINK_KINDS[L.k]}</text>`;
+  }
+  lsvg.innerHTML = s;
+  highlightLinks();
+}
+/* Plusieurs choses sur une même case : le premier point reste au centre,
+   les autres (points et objets) se rangent dans les coins de la case. */
+const SLOTS = [[6, -6], [-6, -6], [6, 6], [-6, 6], [0, -8], [0, 8], [8, 0], [-8, 0]];
+let OFF = new Map();
+function layout() {
+  const groups = new Map(), key = o => `${o.room}|${o.cx}|${o.cy}`;
+  const add = (o, kind) => { const k = key(o); if (!groups.has(k)) groups.set(k, { pts: [], mks: [] }); groups.get(k)[kind].push(o.id); };
+  map.points.forEach(p => add(p, "pts"));
+  markers.filter(m => !hiddenTypes.has(m.type)).forEach(m => add(m, "mks"));
+  OFF = new Map();
+  for (const g of groups.values()) {
+    if (g.pts.length + g.mks.length < 2) continue;
+    let i = 0;
+    g.pts.forEach((id, j) => OFF.set(id, j === 0 ? { dx: 0, dy: 0 } : { dx: SLOTS[i % 8][0], dy: SLOTS[i++ % 8][1] }));
+    g.mks.forEach(id => OFF.set(id, { dx: SLOTS[i % 8][0], dy: SLOTS[i++ % 8][1], small: true }));
+  }
+}
+const opos = o => { const q = pos(o), d = OFF.get(o.id); return d ? { x: q.x + d.dx, y: q.y + d.dy, small: d.small } : q; };
+function renderPoints() {
+  layout();
+  cxl.innerHTML = map.points.map(p => { const q = opos(p);
+    return `<b class="cx cx-${p.k}${p.id === selPoint ? " sel" : ""}" data-pid="${p.id}" style="left:${q.x}px;top:${q.y}px" title="${KINDS[p.k]} · ${esc(refLabel(p))}">${cxInner(p.k)}</b>`; }).join("");
+}
+function renderBase() { layout(); renderLinks(); renderPoints(); }
+
+/* Survol d'une salle : allume ses passages */
+ut.querySelectorAll(".ut-room").forEach(el => {
+  const id = el.dataset.room;
+  el.addEventListener("mouseenter", () => {
+    if (tool || editMode) return;
+    ut.classList.add("dim"); el.classList.add("hot");
+    lsvg.querySelectorAll(`[data-a="${id}"], [data-b="${id}"]`).forEach(p => {
+      p.classList.add("hot");
+      ut.querySelector(`.ut-room[data-room="${p.dataset.a === id ? p.dataset.b : p.dataset.a}"]`).classList.add("hot");
+    });
+  });
+  el.addEventListener("mouseleave", () => { ut.classList.remove("dim"); ut.querySelectorAll(".hot").forEach(n => n.classList.remove("hot")); });
+});
+
+/* ===== Barre d'outils ===== */
+const toolsEl = document.getElementById("tools"), hintEl = document.getElementById("hint"), barEl = document.getElementById("bar");
+function renderToolbar() {
+  if (READONLY) return;
+  barEl.classList.toggle("editing", editMode);
+  toolsEl.innerHTML = editMode
+    ? Object.entries(KINDS).map(([k, l]) => `<button class="tool" data-tool="add:${k}" aria-pressed="${tool === "add:" + k}" title="Ajouter : ${l}">${kindDot(k)}${l}</button>`).join("")
+      + `<span class="tool-sep"></span><button class="tool" data-tool="__edit" aria-pressed="true">✓ Fin des corrections</button>`
+    : Object.entries(TYPES).map(([k, t]) => `<button class="tool" data-tool="${k}" aria-pressed="${tool === k}">${iconHTML(k)}${esc(t.label)}</button>`).join("")
+      + `<span class="tool-sep"></span><button class="tool" data-tool="path" aria-pressed="${tool === "path"}"><span class="ico">↝</span>Chemin</button>`
+      + `<span class="tool-sep"></span><button class="tool" data-tool="__edit" aria-pressed="false" title="Déplacer, ajouter ou supprimer les gouffres, cratères, feux…">✎ Corriger la carte</button>`;
+}
+toolsEl.addEventListener("click", e => {
+  const b = e.target.closest(".tool"); if (!b) return;
+  if (b.dataset.tool === "__edit") { setEdit(!editMode); return; }
+  setTool(tool === b.dataset.tool ? null : b.dataset.tool);
+});
+function setHint() {
+  if (READONLY) { hintEl.textContent = "Survolez une salle ou un chemin pour voir les passages empruntés. Cliquez un objet pour lire sa note, un chemin pour le suivre."; return; }
+  if (linking) { hintEl.innerHTML = `Nouveau <b>${LINK_KINDS[linking.k]}</b> depuis ${esc(refLabel(PT(linking.from)))} : cliquez le point d'arrivée. <kbd>Échap</kbd> annule.`; return; }
+  if (editMode) {
+    hintEl.innerHTML = tool
+      ? `Ajout : <b>${KINDS[tool.slice(4)]}</b> — cliquez des cases. <kbd>Échap</kbd> pour arrêter.`
+      : `Correction : <b>glissez</b> un point vers la bonne case, <b>cliquez-le</b> pour changer son type, ses passages ou décaler sa salle. `
+        + `Tout décaler d'une case : <button class="btn" data-sh="-1,0">←</button><button class="btn" data-sh="1,0">→</button><button class="btn" data-sh="0,-1">↑</button><button class="btn" data-sh="0,1">↓</button>`
+        + `<button class="btn danger" id="resetMap">Réinitialiser la carte</button>`;
+    hintEl.querySelectorAll("[data-sh]").forEach(b => b.onclick = () => { const [dx, dy] = b.dataset.sh.split(",").map(Number); shiftPoints(null, dx, dy); });
+    const r = document.getElementById("resetMap");
+    if (r) r.onclick = () => { if (confirm("Revenir aux positions d'origine des gouffres, cratères, feux… ?")) { map = defaultMap(); selPoint = null; closeEditor(); save(); renderBase(); renderPaths(); } };
+    return;
+  }
+  if (tool === "path") {
+    const n = draft ? draft.pts.length : 0;
+    hintEl.innerHTML = `Chemin : cliquez les cases dans l'ordre du parcours (${n} point${n > 1 ? "s" : ""}). `
+      + `<kbd>Entrée</kbd> ou double-clic pour terminer · <kbd>⌫</kbd> retire le dernier point · <kbd>Échap</kbd> annule`
+      + (n >= 2 ? `<button class="btn primary" id="finish">Terminer</button>` : "");
+    const f = document.getElementById("finish"); if (f) f.onclick = () => finishDraft();
+  } else if (tool) hintEl.innerHTML = `Placement : <b>${esc(TYPES[tool].label)}</b> — cliquez sur une case. <kbd>Échap</kbd> ou re-cliquez le bouton pour arrêter.`;
+  else hintEl.textContent = "Choisissez un objet puis cliquez sur une case pour le placer, ou « Chemin » pour tracer un parcours fléché. Cliquez un marqueur ou un chemin pour le modifier, glissez pour déplacer.";
+}
+function setTool(t) {
+  if (tool === "path" && t !== "path") finishDraft(true);
+  tool = t; linking = null; closeEditor(); selectPath(null);
+  ut.classList.toggle("placing", !!t); ut.classList.toggle("busy", !!t); ut.classList.remove("linking");
+  if (t === "path") draft = { pts: [], color: PATH_COLORS[paths.length % PATH_COLORS.length] };
+  if (!t) hl.style.display = "none";
+  renderToolbar(); renderDraft(); setHint();
+}
+function setEdit(on) {
+  setTool(null);
+  editMode = on; selPoint = null; linking = null;
+  ut.classList.toggle("editing", on);
+  ut.classList.remove("dim"); ut.querySelectorAll(".hot").forEach(n => n.classList.remove("hot"));
+  renderToolbar(); renderPoints(); setHint();
+}
+
+/* Conversion pointeur → case de salle (ou point libre hors salle) */
+const hl = document.getElementById("hl");
+function refAt(clientX, clientY, allowFree) {
+  const box = ut.getBoundingClientRect();
+  const x = clientX - box.left, y = clientY - box.top;
+  for (const r of ROOMS) {
+    if (x >= r.l && x < r.l + r.w && y >= r.t && y < r.t + r.h)
+      return { room: r.id, cx: Math.max(0, Math.min(Math.floor((x - r.l) / CELL), cols(r) - 1)), cy: Math.max(0, Math.min(Math.floor((y - r.t) / CELL), rows(r) - 1)) };
+  }
+  if (allowFree && x >= 0 && y >= 0 && x <= W && y <= H) return { x: Math.round(x), y: Math.round(y) };
+  return null;
+}
+ut.addEventListener("mousemove", e => {
+  if (!tool) return;
+  const ref = refAt(e.clientX, e.clientY, tool === "path");
+  if (!ref) { hl.style.display = "none"; renderDraft(); return; }
+  const p = pos(ref);
+  hl.style.display = "block"; hl.classList.toggle("free", !ref.room);
+  hl.style.left = p.x + "px"; hl.style.top = p.y + "px";
+  if (tool === "path") renderDraft(p);
+});
+ut.addEventListener("mouseleave", () => { hl.style.display = "none"; if (tool === "path") renderDraft(); });
+ut.addEventListener("click", e => {
+  if (!tool || e.target.closest(".ed") || (editMode && e.target.closest(".cx"))) return;
+  if (tool.startsWith("add:")) {
+    const c = refAt(e.clientX, e.clientY, false); if (!c) return;
+    map.points.push({ id: "p" + uid(), k: tool.slice(4), ...c }); save(); renderPoints();
+    return;
+  }
+  if (tool === "path") {
+    const ref = refAt(e.clientX, e.clientY, true); if (!ref) return;
+    if (sameRef(ref, draft.pts[draft.pts.length - 1])) { finishDraft(); return; }
+    draft.pts.push(ref); renderDraft(); setHint();
+    return;
+  }
+  const c = refAt(e.clientX, e.clientY, false); if (!c) return;
+  const m = { id: uid(), type: tool, room: c.room, cx: c.cx, cy: c.cy, note: "" };
+  markers.push(m); save(); renderMarkers(); renderBase(); openMarkerEditor(m.id);
+});
+
+/* ===== Correction de la carte ===== */
+function shiftPoints(roomId, dx, dy) {
+  for (const r of ROOMS) {
+    if (roomId && r.id !== roomId) continue;
+    const pts = map.points.filter(p => p.room === r.id);
+    if (pts.every(p => p.cx + dx >= 0 && p.cx + dx < cols(r) && p.cy + dy >= 0 && p.cy + dy < rows(r)))
+      pts.forEach(p => { p.cx += dx; p.cy += dy; });
+  }
+  save(); renderBase(); renderPaths();
+  if (selPoint && ed) openPointEditor(selPoint);
+}
+let pdrag = null;
+cxl.addEventListener("pointerdown", e => {
+  if (!editMode) return;
+  const el = e.target.closest(".cx"); if (!el) return;
+  e.preventDefault(); e.stopPropagation(); el.setPointerCapture(e.pointerId);
+  pdrag = { el, id: el.dataset.pid, x0: e.clientX, y0: e.clientY, moved: false };
+});
+cxl.addEventListener("pointermove", e => {
+  if (!pdrag) return;
+  if (!pdrag.moved && Math.hypot(e.clientX - pdrag.x0, e.clientY - pdrag.y0) < 4) return;
+  pdrag.moved = true; pdrag.el.classList.add("dragging"); if (ed) { ed.remove(); ed = null; }
+  const ref = refAt(e.clientX, e.clientY, false), p = PT(pdrag.id);
+  if (ref && !sameRef(ref, p)) { Object.assign(p, ref); const q = pos(p); pdrag.el.style.left = q.x + "px"; pdrag.el.style.top = q.y + "px"; renderLinks(); }
+});
+cxl.addEventListener("pointerup", () => {
+  if (!pdrag) return;
+  const d = pdrag; pdrag = null;
+  if (d.moved) { save(); renderPoints(); renderPaths(); return; }
+  if (linking) {
+    if (d.id !== linking.from) { map.links.push({ id: "l" + uid(), k: linking.k, a: linking.from, b: d.id }); save(); renderLinks(); }
+    const from = linking.from; linking = null; ut.classList.remove("linking"); setHint(); openPointEditor(from);
+    return;
+  }
+  openPointEditor(d.id);
+});
+
+/* ===== Chemins ===== */
+const udefs = document.getElementById("udefs"), ulines = document.getElementById("ulines"),
+      udraft = document.getElementById("udraft"), uhandles = document.getElementById("uhandles");
+udefs.innerHTML = PATH_COLORS.map((c, i) =>
+  `<marker id="ah${i}" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="${c}" stroke="#0d0b09" stroke-width=".8"/></marker>`
+).join("");
+const colorIdx = c => Math.max(0, PATH_COLORS.indexOf(c));
+const ptsAttr = pts => pts.map(pos).map(p => `${p.x},${p.y}`).join(" ");
+/* Une seule flèche continue, aux virages arrondis */
+function roundedD(pts, r = 8) {
+  const P = pts.map(pos);
+  let d = `M${P[0].x} ${P[0].y}`;
+  for (let i = 1; i < P.length - 1; i++) {
+    const a = P[i - 1], b = P[i], c = P[i + 1];
+    const l1 = Math.hypot(a.x - b.x, a.y - b.y), l2 = Math.hypot(c.x - b.x, c.y - b.y);
+    if (!l1 || !l2) continue;
+    const rr = Math.min(r, l1 / 2, l2 / 2);
+    const s = { x: b.x + (a.x - b.x) / l1 * rr, y: b.y + (a.y - b.y) / l1 * rr };
+    const e = { x: b.x + (c.x - b.x) / l2 * rr, y: b.y + (c.y - b.y) / l2 * rr };
+    d += ` L${s.x} ${s.y} Q${b.x} ${b.y} ${e.x} ${e.y}`;
+  }
+  const z = P[P.length - 1];
+  return d + ` L${z.x} ${z.y}`;
+}
+function lineSVG(pts, color, cls) {
+  const i = colorIdx(color), p0 = pos(pts[0]);
+  return `<circle class="up-start" cx="${p0.x}" cy="${p0.y}" r="4" fill="${color}"/>`
+    + (pts.length > 1 ? `<path class="${cls}" d="${roundedD(pts)}" stroke="${color}" marker-end="url(#ah${i})"/>` : "");
+}
+/* Passages empruntés par un chemin : un point du chemin est sur le départ ou l'arrivée,
+   ou deux points consécutifs vont de la salle de départ à la salle d'arrivée. */
+function linksOfPath(p) {
+  const out = new Set();
+  for (const L of map.links) {
+    const a = PT(L.a), b = PT(L.b); if (!a || !b) continue;
+    if (p.pts.some(r => sameRef(r, a) || sameRef(r, b))) out.add(L.id);
+    for (let j = 1; j < p.pts.length; j++) if (p.pts[j - 1].room === a.room && p.pts[j].room === b.room) out.add(L.id);
+  }
+  return out;
+}
+let hoverPath = null;
+function highlightLinks() {
+  const set = new Set();
+  for (const p of paths) if (!pathsHidden && (p.hl || p.id === selPath || p.id === hoverPath)) linksOfPath(p).forEach(i => set.add(i));
+  if (selPoint) map.links.forEach(L => { if (L.a === selPoint || L.b === selPoint) set.add(L.id); });
+  lsvg.querySelectorAll("[data-lid]").forEach(n => n.classList.toggle("phot", set.has(n.dataset.lid)));
+}
+function renderPaths() {
+  const anyHl = paths.some(p => p.hl);
+  ulines.innerHTML = paths.map(p =>
+    `<g class="up-g${p.id === selPath ? " sel" : ""}${pathsHidden ? " hidden" : ""}${p.hl ? " hl" : anyHl ? " faded" : ""}" data-id="${p.id}">${lineSVG(p.pts, p.color, "up-line")}`
+    + `<path class="up-hit" d="${roundedD(p.pts)}"><title>${esc(p.note || "Chemin")}</title></path></g>`).join("");
+  highlightLinks();
+  const sp = !READONLY && paths.find(p => p.id === selPath);
+  uhandles.innerHTML = sp ? sp.pts.map((r, i) => { const q = pos(r); return `<circle class="up-handle" data-i="${i}" cx="${q.x}" cy="${q.y}" r="5" stroke="${sp.color}"><title>Glisser pour déplacer · double-clic pour supprimer ce point</title></circle>`; }).join("") : "";
+}
+function renderDraft(cursor) {
+  if (!draft || !draft.pts.length) { udraft.innerHTML = ""; return; }
+  let s = lineSVG(draft.pts, draft.color, "up-line");
+  if (cursor) { const l = pos(draft.pts[draft.pts.length - 1]); s += `<line class="up-draft" x1="${l.x}" y1="${l.y}" x2="${cursor.x}" y2="${cursor.y}" stroke="${draft.color}"/>`; }
+  udraft.innerHTML = s;
+}
+function finishDraft(silent) {
+  if (!draft) return;
+  let newId = null;
+  if (draft.pts.length >= 2) { newId = uid(); paths.push({ id: newId, color: draft.color, note: draft.note || "", pts: draft.pts }); save(); renderPaths(); }
+  draft = null; udraft.innerHTML = "";
+  if (silent === true) return;
+  setTool(null);
+  if (newId) { selectPath(newId); openPathEditor(newId); }
+}
+function selectPath(id) { selPath = id; renderPaths(); }
+
+ulines.addEventListener("mouseover", e => { const g = e.target.closest(".up-g"); const id = g && !tool ? g.dataset.id : null; if (id !== hoverPath) { hoverPath = id; highlightLinks(); } });
+ulines.addEventListener("mouseout", e => { if (!e.relatedTarget || !e.relatedTarget.closest || !e.relatedTarget.closest(".up-g")) { hoverPath = null; highlightLinks(); } });
+ulines.addEventListener("click", e => {
+  const g = e.target.closest(".up-g"); if (!g || tool || editMode) return;
+  e.stopPropagation();
+  if (READONLY) { selectPath(selPath === g.dataset.id ? null : g.dataset.id); return; }
+  selectPath(g.dataset.id); openPathEditor(g.dataset.id);
+});
+let hdrag = null;
+uhandles.addEventListener("pointerdown", e => {
+  const h = e.target.closest(".up-handle"); if (!h) return;
+  e.preventDefault(); e.stopPropagation(); h.setPointerCapture(e.pointerId);
+  hdrag = { i: +h.dataset.i };
+});
+uhandles.addEventListener("pointermove", e => {
+  if (!hdrag) return;
+  const p = paths.find(x => x.id === selPath), ref = refAt(e.clientX, e.clientY, true);
+  if (p && ref && !sameRef(ref, p.pts[hdrag.i])) { p.pts[hdrag.i] = ref; hdrag.moved = true; renderPaths(); }
+});
+uhandles.addEventListener("pointerup", () => { if (hdrag && hdrag.moved) save(); hdrag = null; });
+uhandles.addEventListener("dblclick", e => {
+  const h = e.target.closest(".up-handle"); if (!h) return;
+  const p = paths.find(x => x.id === selPath); if (!p || p.pts.length <= 2) return;
+  p.pts.splice(+h.dataset.i, 1); save(); renderPaths();
+});
+
+/* ===== Marqueurs ===== */
+const mks = document.getElementById("mks");
+function renderMarkers() {
+  layout();
+  mks.innerHTML = markers.map(m => {
+    const p = opos(m), t = TYPES[m.type] || TYPES.note;
+    const tip = `${t.label} — ${refLabel(m)}${m.note ? "\n" + m.note : ""}`;
+    return `<div class="mk${hiddenTypes.has(m.type) ? " hidden" : ""}${p.small ? " small" : ""}" data-id="${m.id}" style="left:${p.x}px;top:${p.y}px;--mkc:${t.color}">${iconHTML(m.type)}<span class="tip">${esc(tip)}</span></div>`;
+  }).join("");
+}
+let drag = null;
+mks.addEventListener("pointerdown", e => {
+  const el = e.target.closest(".mk"); if (!el) return;
+  if (READONLY) { const was = el.classList.contains("pin"); mks.querySelectorAll(".pin").forEach(n => n.classList.remove("pin")); el.classList.toggle("pin", !was); return; }
+  e.preventDefault(); el.setPointerCapture(e.pointerId);
+  drag = { el, id: el.dataset.id, x0: e.clientX, y0: e.clientY, moved: false };
+});
+mks.addEventListener("pointermove", e => {
+  if (!drag) return;
+  if (Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) > 4) drag.moved = true;
+  if (!drag.moved) return;
+  drag.el.classList.add("dragging");
+  const box = ut.getBoundingClientRect();
+  drag.el.style.left = (e.clientX - box.left) + "px"; drag.el.style.top = (e.clientY - box.top) + "px";
+});
+mks.addEventListener("pointerup", e => {
+  if (!drag) return;
+  const d = drag; drag = null;
+  const m = markers.find(x => x.id === d.id);
+  if (d.moved) { const c = refAt(e.clientX, e.clientY, false); if (c) Object.assign(m, c); save(); renderMarkers(); renderBase(); }
+  else { selectPath(null); openMarkerEditor(d.id); }
+});
+
+/* ===== Éditeurs ===== */
+let ed = null;
+function closeEditor() {
+  if (ed) { ed.remove(); ed = null; }
+  if (selPoint) { selPoint = null; renderPoints(); highlightLinks(); }
+}
+function placeEditor(p, hgt = 190) {
+  ed.style.left = Math.min(Math.max(p.x - 125, 0), W - 250) + "px";
+  ed.style.top = (p.y + 18 + hgt > H ? Math.max(0, p.y - hgt - 20) : p.y + 18) + "px";
+  ut.appendChild(ed);
+  ed.addEventListener("pointerdown", e => e.stopPropagation());
+}
+function openMarkerEditor(id) {
+  closeEditor();
+  const m = markers.find(x => x.id === id); if (!m) return;
+  ed = document.createElement("div"); ed.className = "ed";
+  ed.innerHTML = `<h3>${esc(refLabel(m))}</h3>
+    <div class="types">${Object.entries(TYPES).map(([k, t]) => `<button class="tool" data-t="${k}" aria-pressed="${k === m.type}" title="${esc(t.label)}">${iconHTML(k)}</button>`).join("")}</div>
+    <textarea placeholder="Note (ex. : Feuille n°4, texte de l'inscription…)">${esc(m.note)}</textarea>
+    <div class="row"><button class="btn danger" data-act="del">Supprimer</button><button class="btn primary" data-act="ok">OK</button></div>`;
+  placeEditor(cc(m.room, m.cx, m.cy));
+  const ta = ed.querySelector("textarea"); ta.focus();
+  ed.addEventListener("click", e => {
+    e.stopPropagation();
+    const tb = e.target.closest("[data-t]");
+    if (tb) { m.type = tb.dataset.t; ed.querySelectorAll("[data-t]").forEach(b => b.setAttribute("aria-pressed", b === tb)); save(); renderMarkers(); return; }
+    const act = e.target.closest("[data-act]")?.dataset.act;
+    if (act === "del") { markers = markers.filter(x => x.id !== id); save(); renderMarkers(); renderBase(); closeEditor(); }
+    if (act === "ok") { renderMarkers(); closeEditor(); }
+  });
+  ta.addEventListener("input", () => { m.note = ta.value.trim(); save(); });
+}
+function openPathEditor(id) {
+  closeEditor();
+  const p = paths.find(x => x.id === id); if (!p) return;
+  ed = document.createElement("div"); ed.className = "ed";
+  ed.innerHTML = `<h3>Chemin · ${p.pts.length} points · de ${esc(refLabel(p.pts[0]))}</h3>
+    <div class="types">${PATH_COLORS.map(c => `<button class="sw" data-c="${c}" style="background:${c}" aria-pressed="${c === p.color}"></button>`).join("")}</div>
+    <textarea placeholder="Nom ou note du chemin (ex. : vers la feuille n°4)">${esc(p.note)}</textarea>
+    <div class="row"><button class="btn danger" data-act="del">Supprimer</button><button class="btn" data-act="rev">Inverser</button><button class="btn" data-act="ext">Prolonger</button><button class="btn primary" data-act="ok">OK</button></div>`;
+  placeEditor(pos(p.pts[p.pts.length - 1]));
+  const ta = ed.querySelector("textarea");
+  ed.addEventListener("click", e => {
+    e.stopPropagation();
+    const sw = e.target.closest("[data-c]");
+    if (sw) { p.color = sw.dataset.c; ed.querySelectorAll("[data-c]").forEach(b => b.setAttribute("aria-pressed", b === sw)); save(); renderPaths(); return; }
+    const act = e.target.closest("[data-act]")?.dataset.act;
+    if (act === "del") { paths = paths.filter(x => x.id !== id); selPath = null; save(); renderPaths(); closeEditor(); }
+    if (act === "rev") { p.pts.reverse(); save(); renderPaths(); }
+    if (act === "ext") {
+      paths = paths.filter(x => x.id !== id); save();
+      setTool("path"); draft = { pts: p.pts.slice(), color: p.color, note: p.note }; renderDraft(); renderPaths(); setHint();
+    }
+    if (act === "ok") { selectPath(null); closeEditor(); }
+  });
+  ta.addEventListener("input", () => { p.note = ta.value.trim(); save(); renderPaths(); });
+}
+function openPointEditor(id) {
+  if (ed) { ed.remove(); ed = null; }
+  const p = PT(id); if (!p) return;
+  selPoint = id; renderPoints(); highlightLinks();
+  const ls = map.links.filter(L => L.a === id || L.b === id);
+  ed = document.createElement("div"); ed.className = "ed";
+  ed.innerHTML = `<h3>${KINDS[p.k]} · ${esc(refLabel(p))}</h3>
+    <div class="types">${Object.entries(KINDS).map(([k, l]) => `<button class="tool" data-k="${k}" aria-pressed="${k === p.k}" title="${l}">${kindDot(k)}</button>`).join("")}</div>
+    <div class="lbl">Passages</div>
+    <ul class="links">${ls.length ? ls.map(L => { const o = PT(L.a === id ? L.b : L.a);
+      return `<li><span>${L.a === id ? "→" : "←"} ${LINK_KINDS[L.k]} ${L.a === id ? "vers" : "depuis"} ${esc(refLabel(o))}</span><button data-dl="${L.id}" title="Supprimer ce passage">×</button></li>`; }).join("") : `<li><span>Aucun</span></li>`}</ul>
+    <div class="row" style="margin-top:0"><button class="btn" data-link="pit">+ Gouffre vers…</button><button class="btn" data-link="crevasse">+ Crevasse vers…</button></div>
+    <div class="lbl">Décaler tous les points de ${esc(ROOM[p.room].name)}</div>
+    <div class="arrows"><button class="btn" data-sh="-1,0">←</button><button class="btn" data-sh="1,0">→</button><button class="btn" data-sh="0,-1">↑</button><button class="btn" data-sh="0,1">↓</button></div>
+    <div class="row"><button class="btn danger" data-act="del">Supprimer le point</button><button class="btn primary" data-act="ok">OK</button></div>`;
+  placeEditor(pos(p), 300);
+  ed.addEventListener("click", e => {
+    e.stopPropagation();
+    const kb = e.target.closest("[data-k]");
+    if (kb) { p.k = kb.dataset.k; save(); renderPoints(); openPointEditor(id); return; }
+    const dl = e.target.closest("[data-dl]");
+    if (dl) { map.links = map.links.filter(L => L.id !== dl.dataset.dl); save(); renderLinks(); openPointEditor(id); return; }
+    const lk = e.target.closest("[data-link]");
+    if (lk) { linking = { from: id, k: lk.dataset.link }; ed.remove(); ed = null; ut.classList.add("linking"); setHint(); return; }
+    const sh = e.target.closest("[data-sh]");
+    if (sh) { const [dx, dy] = sh.dataset.sh.split(",").map(Number); shiftPoints(p.room, dx, dy); return; }
+    const act = e.target.closest("[data-act]")?.dataset.act;
+    if (act === "del") { map.points = map.points.filter(x => x.id !== id); map.links = map.links.filter(L => L.a !== id && L.b !== id); closeEditor(); save(); renderBase(); renderPaths(); }
+    if (act === "ok") closeEditor();
+  });
+}
+
+document.addEventListener("pointerdown", e => {
+  if (e.target.closest(".ed,.mk,.up-handle,.up-g,.bar,.cx")) return;
+  if (READONLY) mks.querySelectorAll(".pin").forEach(n => n.classList.remove("pin"));
+  if (ed || selPoint) { renderMarkers(); closeEditor(); }
+  if (selPath && !tool) selectPath(null);
+});
+document.addEventListener("keydown", e => {
+  if (e.target.tagName === "TEXTAREA") { if (e.key === "Escape") { closeEditor(); selectPath(null); } return; }
+  if (linking && e.key === "Escape") { const f = linking.from; linking = null; ut.classList.remove("linking"); setHint(); openPointEditor(f); return; }
+  if (tool === "path") {
+    if (e.key === "Enter") { e.preventDefault(); finishDraft(); return; }
+    if (e.key === "Backspace") { e.preventDefault(); draft.pts.pop(); renderDraft(); setHint(); return; }
+    if (e.key === "Escape") { draft = null; setTool(null); return; }
+  }
+  if (e.key === "Escape") { if (ed) { closeEditor(); selectPath(null); } else if (tool) setTool(null); else if (editMode) setEdit(false); }
+});
+
+/* ===== Panneau latéral ===== */
+const filtersEl = document.getElementById("filters"), listEl = document.getElementById("list"), plistEl = document.getElementById("plist");
+function renderList() {
+  filtersEl.innerHTML = Object.entries(TYPES).map(([k, t]) => {
+    const n = markers.filter(m => m.type === k).length;
+    return `<label><input type="checkbox" data-f="${k}" ${hiddenTypes.has(k) ? "" : "checked"}>${iconHTML(k)}${esc(t.label)}<span class="n">${n}</span></label>`;
+  }).join("") + `<label><input type="checkbox" data-f="__paths" ${pathsHidden ? "" : "checked"}><span class="ico">↝</span>Chemins<span class="n">${paths.length}</span></label>`;
+  if (!markers.length) listEl.innerHTML = `<li class="empty-state">Aucun objet placé${READONLY ? "" : " pour l'instant"}.</li>`;
+  else {
+    let out = "";
+    for (const r of ROOMS) {
+      const ms = markers.filter(m => m.room === r.id).sort((a, b) => a.cy - b.cy || a.cx - b.cx);
+      if (!ms.length) continue;
+      out += `<li class="room">${esc(r.name)} (${ms.length})</li>`;
+      for (const m of ms) out += `<li class="item" data-id="${m.id}">${iconHTML(m.type)}<span class="txt${m.note ? "" : " empty"}">${m.note ? esc(m.note) : (TYPES[m.type] || TYPES.note).label + " · case " + (m.cx + 1) + ", " + (m.cy + 1)}</span></li>`;
+    }
+    listEl.innerHTML = out;
+  }
+  plistEl.innerHTML = paths.length ? paths.map(p =>
+    `<li class="item" data-pid="${p.id}"><input type="checkbox" class="hlbox" data-hl="${p.id}" ${p.hl ? "checked" : ""} title="Mettre en évidence"><span class="swatch" style="background:${p.color}"></span><span class="txt${p.note ? "" : " empty"}">${p.note ? esc(p.note) : `${esc(refLabel(p.pts[0]))} → ${esc(refLabel(p.pts[p.pts.length - 1]))}`}</span></li>`).join("")
+    : `<li class="empty-state">Aucun chemin.${READONLY ? "" : " Utilisez l'outil « Chemin »."}</li>`;
+}
+filtersEl.addEventListener("change", e => {
+  const k = e.target.dataset.f; if (!k) return;
+  if (k === "__paths") { pathsHidden = !e.target.checked; renderPaths(); return; }
+  e.target.checked ? hiddenTypes.delete(k) : hiddenTypes.add(k);
+  renderMarkers(); renderBase();
+});
+listEl.addEventListener("click", e => {
+  const li = e.target.closest("li.item"); if (!li) return;
+  const el = mks.querySelector(`.mk[data-id="${li.dataset.id}"]`); if (!el) return;
+  el.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+  el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash");
+  if (READONLY) { mks.querySelectorAll(".pin").forEach(n => n.classList.remove("pin")); el.classList.add("pin"); }
+});
+plistEl.addEventListener("change", e => {
+  const id = e.target.dataset.hl; if (!id) return;
+  const p = paths.find(x => x.id === id); if (p) { p.hl = e.target.checked; if (READONLY) renderPaths(); else { save(); renderPaths(); } }
+});
+const setAllHl = v => { paths.forEach(p => p.hl = v); if (!READONLY) save(); else renderList(); renderPaths(); };
+document.getElementById("hlAll").onclick = () => setAllHl(true);
+document.getElementById("hlNone").onclick = () => setAllHl(false);
+plistEl.addEventListener("click", e => {
+  if (e.target.closest(".hlbox")) return;
+  const li = e.target.closest("li.item"); if (!li) return;
+  if (!READONLY) { if (editMode) setEdit(false); setTool(null); }
+  selectPath(li.dataset.pid);
+  const g = ulines.querySelector(`.up-g[data-id="${li.dataset.pid}"]`); if (!g) return;
+  g.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+  g.classList.remove("flash"); void g.getBBox(); g.classList.add("flash");
+});
+
+/* ===== Sauvegarde / restauration / export ===== */
+if (!READONLY) {
+  document.getElementById("exp").onclick = () => download(JSON.stringify({ version: 3, mapBase: MAP_BASE, markers, paths, map }, null, 2), "atlas-souterrain.json", "application/json");
+  const fileIn = document.getElementById("file");
+  document.getElementById("imp").onclick = () => fileIn.click();
+  const validRef = r => r && ((ROOM[r.room] && Number.isInteger(r.cx) && Number.isInteger(r.cy)) || (!r.room && isFinite(r.x) && isFinite(r.y)));
+  const cleanRef = r => r.room ? { room: r.room, cx: r.cx, cy: r.cy } : { x: +r.x, y: +r.y };
+  fileIn.onchange = async () => {
+    const f = fileIn.files[0]; if (!f) return;
+    try {
+      const data = JSON.parse(await f.text());
+      const ms = (Array.isArray(data) ? data : data.markers || []).filter(m => validRef(m) && m.room)
+        .map(m => ({ id: uid(), type: TYPES[m.type] ? m.type : "note", room: m.room, cx: m.cx, cy: m.cy, note: String(m.note || "") }));
+      const ps = (Array.isArray(data) ? [] : data.paths || []).filter(p => Array.isArray(p.pts) && p.pts.length >= 2 && p.pts.every(validRef))
+        .map(p => ({ id: uid(), color: PATH_COLORS.includes(p.color) ? p.color : PATH_COLORS[0], note: String(p.note || ""), hl: !!p.hl, pts: p.pts.map(cleanRef) }));
+      const newMap = data.map && Array.isArray(data.map.points) ? {
+        points: data.map.points.filter(p => KINDS[p.k] && validRef(p) && p.room).map(p => ({ id: String(p.id), k: p.k, room: p.room, cx: p.cx, cy: p.cy })),
+        links: (data.map.links || []).filter(L => LINK_KINDS[L.k]).map(L => ({ id: String(L.id), k: L.k, a: String(L.a), b: String(L.b) })) } : null;
+      const replace = (markers.length || paths.length) && confirm(`${ms.length} objets et ${ps.length} chemins trouvés${newMap ? " (+ corrections de la carte)" : ""}.\nOK = remplacer le contenu actuel\nAnnuler = l'ajouter au contenu actuel`);
+      markers = replace ? ms : markers.concat(ms);
+      paths = replace ? ps : paths.concat(ps);
+      if (newMap) map = newMap;
+      save(); renderMarkers(); renderBase(); renderPaths();
+    } catch (err) { alert("Fichier invalide."); }
+    fileIn.value = "";
+  };
+  document.getElementById("clr").onclick = () => {
+    if ((markers.length || paths.length) && confirm("Effacer tous les objets et chemins ? (les corrections de la carte sont conservées)")) { markers = []; paths = []; selPath = null; save(); renderMarkers(); renderPaths(); }
+  };
+
+  /* Atlas en lecture seule : ce même fichier, avec les données intégrées */
+  document.getElementById("expAtlas").onclick = () => {
+    const data = { readonly: true, exportedAt: new Date().toISOString(), map, markers, paths, images };
+    const json = JSON.stringify(data).replace(/</g, "\\u003c");
+    const out = PRISTINE.replace(/(<script id="atlas-data" type="application\/json">)[\s\S]*?(<\/script>)/, (m, a, b) => a + json + b);
+    download(out, "atlas-souterrain-lecture.html", "text/html");
+  };
+
+  /* Images intégrées */
+  const imgKeys = [...ROOMS.map(r => ({ key: r.id, url: IMG_BASE + r.id + ".png", label: r.name })), { key: "flambeau", url: FIRE_IMG, label: "Feu" },
+                   ...Object.values(TYPES).filter(t => t.imgKey).map(t => ({ key: t.imgKey, url: t.img, label: t.label }))];
+  const renderImgInfo = () => {
+    const n = imgKeys.filter(k => images[k.key]).length;
+    document.getElementById("imgCount").textContent = `${n}/${imgKeys.length} intégrées`;
+    document.getElementById("imgLinks").innerHTML = imgKeys.map(k => `<a href="${k.url}" target="_blank" rel="noopener" class="${images[k.key] ? "ok" : ""}">${esc(k.label)} — ${k.url.split("/").pop()}</a>`).join("");
+  };
+  renderImgInfo();
+  const imgIn = document.getElementById("imgFile");
+  document.getElementById("imgBtn").onclick = () => imgIn.click();
+  imgIn.onchange = async () => {
+    let ok = 0, unknown = [];
+    for (const f of imgIn.files) {
+      const base = f.name.replace(/\?.*$/, "").replace(/\.[a-z0-9]+$/i, "").replace(/\s*\(\d+\)$/, "");
+      const k = imgKeys.find(x => x.key === base);
+      if (!k) { unknown.push(f.name); continue; }
+      images[k.key] = await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(f); });
+      ok++;
+    }
+    try { localStorage.setItem(IMG_KEY, JSON.stringify(images)); } catch (e) { alert("Images trop lourdes pour être mémorisées dans le navigateur, mais elles seront intégrées si vous exportez maintenant."); }
+    ut.querySelectorAll(".ut-room").forEach(el => { const src = images[el.dataset.room]; if (src) { const img = el.querySelector("img"); img.parentElement.classList.remove("no-img"); img.src = src; } });
+    renderImgInfo(); renderToolbar(); renderBase(); renderMarkers(); renderList(); renderLegend();
+    if (unknown.length) alert(`${ok} image(s) intégrée(s).\nNon reconnues (le nom doit rester celui d'origine, ex. floor_2.png, 365.gif) :\n${unknown.join("\n")}`);
+    imgIn.value = "";
+  };
+} else {
+  document.getElementById("subtitle").textContent = `11 salles · ${markers.length} objet${markers.length > 1 ? "s" : ""} · ${paths.length} chemin${paths.length > 1 ? "s" : ""}`;
+  try { document.getElementById("roNote").textContent = "Atlas en lecture seule, exporté le " + new Date(EMBED.exportedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) + "."; } catch (e) {}
+}
+
+function renderLegend() { document.querySelectorAll(".legend .cx-fire").forEach(b => { b.classList.remove("dot"); b.innerHTML = cxInner("fire"); }); }
+renderLegend(); renderToolbar(); setHint(); renderBase(); renderMarkers(); renderPaths(); renderList();
+</script></body></html>
